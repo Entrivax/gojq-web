@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>GOJQ web</title>
+	<link href="./style/style.css" rel="stylesheet">
+	<script src="./script/wasm_exec.js"></script>
+	<link href="https://cdn.jsdelivr.net/npm/vscode-codicons@0.0.17/dist/codicon.min.css" rel="stylesheet">
+	<script src="https://cdn.jsdelivr.net/npm/requirejs@2.3.7/require.min.js"></script>
+</head>
+
+<body>
+	<div class="h-full flex flex-col gap-4 p-4">
+		<div class="flex flex-row flex-grow w-full overflow-hidden gap-4">
+			<div class="card flex-grow">
+				<div class="flex gap-4 flex-wrap">
+					<div class="form-group">
+						<label class="font-medium text-sm" for="file">JSON input</label>
+						<input type="file" id="file" accept=".json" />
+					</div>
+					<div class="form-group">
+						<label class="font-medium">
+							<input type="checkbox" id="pretty" checked />
+							<span class="ml-2 text-sm">Pretty print</span>
+						</label>
+					</div>
+				</div>
+			</div>
+			<div class="card">
+				<div class="form-group">
+					<div class="font-semibold">About</div>
+					<div class="text-sm"><span class="font-medium">gojq version:</span> <span id="gojq-version"></span></div>
+					<a target="_blank" href="./LICENSES.txt">Licenses</a>
+				</div>
+			</div>
+		</div>
+		<div class="flex flex-row flex-grow w-full overflow-hidden gap-4">
+			<div class="w-1/2 overflow-hidden card">
+				<div class="form-group h-full">
+					<div class="font-medium text-sm block">GOJQ Query</div>
+					<div class="query-editor editor"></div>
+				</div>
+			</div>
+			<div class="w-1/2 overflow-hidden card">
+				<div class="form-group h-full">
+					<div class="font-medium text-sm block">Result</div>
+					<div class="result editor"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script>
+		require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs' } });
+
+		const go = new Go();
+		WebAssembly.instantiateStreaming(
+			fetch("./script/gojs.wasm"),
+			go.importObject
+		).then((result) => {
+			go.run(result.instance);
+			run()
+		});
+
+		function run() {
+			document.getElementById('gojq-version').textContent = gojq.gojqVersion
+			let prepared = gojq.prepare('{}')
+			const fileInput = document.getElementById('file')
+			const pretty = /** @type {HTMLInputElement} */(document.getElementById('pretty'))
+
+			require(['vs/editor/editor.main'], function () {
+				monaco.languages.register({ id: 'jq' })
+				monaco.languages.setMonarchTokensProvider('jq', jqLanguageTokens());
+				const resultEditor = monaco.editor.create(document.querySelector('.result'), {
+					language: 'json',
+					theme: 'vs-dark',
+					automaticLayout: true,
+					readOnly: true
+				})
+				const resultModel = resultEditor.getModel()
+				const queryEditor = monaco.editor.create(document.querySelector('.query-editor'), {
+					language: 'jq',
+					theme: 'vs-dark',
+					automaticLayout: true,
+					value: '.',
+				})
+				const queryModel = queryEditor.getModel()
+				queryModel.onDidChangeContent(() => {
+					runQuery()
+				})
+
+				pretty.addEventListener('change', () => {
+					runQuery()
+				})
+
+				fileInput.addEventListener('change', (e) => {
+					const file = e.target.files[0]
+					const reader = new FileReader()
+					reader.onload = (e) => {
+						const text = e.target.result
+						prepared = gojq.prepare(text)
+						runQuery()
+					}
+					reader.readAsText(file)
+				})
+
+				const maxIter = 100
+				let timeout = null
+				const delay = 200
+				function runQuery(query) {
+					if (timeout != null) {
+						window.clearTimeout(timeout)
+						timeout = null
+					}
+					timeout = window.setTimeout(() => {
+						resultModel.setValue(prepared(queryModel.getValue(), pretty.checked, maxIter))
+					}, delay)
+				}
+
+				runQuery()
+			})
+		}
+
+		/**
+		 * https://github.com/elisherer/monaco-languages-jq
+MIT License
+
+Copyright (c) 2021 Eli Sherer
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+		 */
+		function jqLanguageTokens() {
+			return {
+				// Set defaultToken to invalid to see what you do not tokenize yet
+				// defaultToken: 'invalid',
+
+				// prettier-ignore
+				keywords: [
+					'def', 'not', 'or', 'and', 'as', 'in', 'label', 'add',
+					'try', 'catch', 'any', 'all', 'flatten', 'range',
+					'if', 'then', 'else', 'elif',
+					'end',
+					'select', 'map', 'map_values', 'reduce',
+					'path', 'del', 'getpath', 'setpath', 'delpaths', 'paths', 'leaf_paths',
+					'to_entries', 'from_entries', 'with_entries',
+					'arrays', 'objects', 'iterables', 'booleans', 'numbers', 'normals', 'finites', 'strings', 'nulls', 'values', 'scalars', 'empty',
+					'error', 'halt', 'halt_error',
+					'length', 'utf8bytelength', 'keys', 'keys_unsorted', 'has',
+					'tonumber', 'tostring', 'type',
+					'acos', 'acosh', 'asin', 'asinh', 'atan', 'atanh', 'cbrt', 'ceil', 'cos', 'cosh', 'erf', 'erfc', 'exp', 'exp10', 'exp2', 'expm1', 'fabs', 'floor', 'gamma', 'j0', 'j1', 'lgamma', 'log', 'log10', 'log1p', 'log2', 'logb', 'nearbyint', 'pow10', 'rint', 'round', 'significand', 'sin', 'sinh', 'sqrt', 'tan', 'tanh', 'tgamma', 'trunc', 'y0', 'y1',
+					'fma', 'atan2', 'copysign', 'drem', 'fdim', 'fmax', 'fmin', 'fmod', 'frexp', 'hypot', 'jn', 'ldexp', 'modf', 'nextafter', 'nexttoward', 'pow', 'remainder', 'scalb', 'scalbln', 'yn',
+					'infinite', 'nan', 'isinfinite', 'isnan', 'isfinite', 'isnormal',
+					'sort', 'sort_by', 'group_by', 'min', 'max', 'min_by', 'max_by',
+					'unique', 'unique_by', 'reverse', 'contains', 'indices', 'index', 'rindex',
+					'inside', 'startswith', 'endswith', 'combinations', 'ltrimstr', 'rtrimstr',
+					'explode', 'implode', 'split', 'join', 'ascii_downcase', 'ascii_upcase',
+					'foreach', 'while', 'until', 'recurse', 'break', 'recurse_down', 'walk', 'transpose', 'bsearch',
+					'INDEX', 'JOIN', 'IN',
+					'test', 'match', 'capture', 'scan', 'splits', 'sub', 'gsub',
+					'isempty', 'limit', 'first', 'last', 'nth',
+					'tostream', 'fromstream',
+					'import', 'include', 'module', 'modulemeta'
+				],
+
+				// prettier-ignore
+				operators: [
+					'=', '>', '<', '!', '~', '?', '==', '<=', '>=', '!=',
+					'+', '-', '*', '/', '&', '|', '^', '%', '//', '..',
+					'+=', '-=', '*=', '/=', '%=', '//=', '?//', "|="
+				],
+
+				// we include these common regular expressions
+				symbols: /[=><!~?:&|+\-*/^%]+/,
+
+				escapes: /\\(?:[abfnrtv\\"']|x[0-9A-Fa-f]{1,4}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})/,
+
+				// The main tokenizer for our languages
+				tokenizer: {
+					root: [
+						[/def +/, { token: "keyword", next: "@definition" }],
+						// identifiers and keywords
+						[/[a-z_][\w$]*/, { cases: { "@keywords": "keyword", "@default": "identifier" } }],
+						[/\$[a-z_$][\w$]*/, "annotation"],
+
+						// delimiters and operators
+						[/[{}()[\]]/, "@brackets"],
+						[/[<>](?!@symbols)/, "@brackets"],
+						[/@symbols/, { cases: { "@operators": "operator", "@default": "" } }],
+
+						// numbers
+						[/\d*\.\d+([eE][-+]?\d+)?/, "number.float"],
+						[/0[xX][0-9a-fA-F]+/, "number.hex"],
+						[/\d+/, "number"],
+
+						// delimiter: after number because of .\d floats
+						[/[;,.]/, "delimiter"],
+
+						// strings
+						[/"([^"\\]|\\.)*$/, "string.invalid"], // non-teminated string
+						[/"/, { token: "string.quote", bracket: "@open", next: "@string" }],
+
+						// whitespace
+						[/[ \t\r\n]+/, "white"],
+						[/#.*$/, "comment"]
+					],
+
+					definition: [[/[a-z_][\w$]*/, { token: "type", next: "@root" }]],
+
+					string: [
+						[/[^\\"]+/, "string"],
+						[/@escapes/, "string.escape"],
+						[/\\./, "string.escape.invalid"],
+						[/"/, { token: "string.quote", bracket: "@close", next: "@pop" }]
+					]
+				}
+			}
+		}
+	</script>
+</body>
+
+</html>

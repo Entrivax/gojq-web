@@ -1,0 +1,119 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+html,
+body {
+	height: 100%;
+	border: 0;
+	padding: 0;
+	margin: 0;
+}
+
+:root {
+	--bg: hsl(240, 11%, 4%);
+	--border: hsl(240, 6%, 25%);
+	--text: hsl(240, 17%, 91%);
+
+	--spacing-base: 16px;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	font-family: 'Poppins', sans-serif;
+	background-color: var(--bg);
+	color: var(--text);
+}
+
+.flex {
+	display: flex;
+}
+
+.flex-col {
+	flex-direction: column;
+}
+
+.flex-row {
+	flex-direction: row;
+}
+
+.flex-grow {
+	flex-grow: 1;
+}
+
+.flex-shrink {
+	flex-shrink: 1;
+}
+
+.flex-wrap {
+	flex-wrap: wrap;
+}
+
+.h-full {
+	height: 100%;
+}
+
+.w-full {
+	width: 100%;
+}
+
+.w-1\/2 {
+	width: 50%;
+}
+
+.card {
+	border-radius: 8px;
+	border: 1px solid var(--border);
+	background-color: var(--bg);
+	color: var(--text);
+
+	padding: calc(var(--spacing-base) * 1.25);
+}
+
+.gap-4 {
+	gap: var(--spacing-base);
+}
+
+.p-4 {
+	padding: var(--spacing-base);
+}
+
+.overflow-hidden {
+	overflow: hidden;
+}
+
+.text-sm {
+	font-size: 0.875rem;
+}
+
+.font-bold {
+	font-weight: 700;
+}
+
+.font-semibold {
+	font-weight: 600;
+}
+
+.font-medium {
+	font-weight: 500;
+}
+
+.font-normal {
+	font-weight: 400;
+}
+
+.form-group {
+	display: flex;
+	flex-direction: column;
+	gap: calc(var(--spacing-base) * 0.5);
+}
+
+.editor {
+	flex: 1;
+	min-height: 0px;
+}
+
+a {
+	color: var(--text);
+}
