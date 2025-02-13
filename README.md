@@ -14,7 +14,7 @@ Its main goal is to test your queries before using them with [gojq](https://gith
 ## How to build
 
 ### Requirements
-- Go 1.24
+- Go 1.23
 - Make
 - go-licenses `go install github.com/google/go-licenses@latest`
 

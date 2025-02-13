@@ -4,17 +4,39 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"syscall/js"
 
 	"github.com/itchyny/gojq"
+	"github.com/mattn/go-runewidth"
 )
 
 var gojqVersion = "unknown"
 
+func stringParseError(queryStr string, err *gojq.ParseError) string {
+	line := 0
+	lineBuf := ""
+	for i := 0; i < min(len(queryStr), err.Offset); i++ {
+		if queryStr[i] == '\n' {
+			line++
+			lineBuf = ""
+		} else {
+			lineBuf += string(queryStr[i])
+		}
+	}
+	col := runewidth.StringWidth(lineBuf)
+	prefix := fmt.Sprintf("%d: ", line)
+	strings.Repeat(" ", col)
+	return fmt.Sprintf("%s%s\n%s%s", prefix, lineBuf, strings.Repeat(" ", col+len(prefix)-len(err.Token))+strings.Repeat("^", len(err.Token))+"--- ", err.Error())
+}
+
 func execJq(queryStr string, data map[string]any, pretty bool, maxIter int) string {
 	query, err := gojq.Parse(queryStr)
 	if err != nil {
+		if err, ok := err.(*gojq.ParseError); ok {
+			return stringParseError(queryStr, err)
+		}
 		return err.Error()
 	}
 	iter := query.Run(data)
