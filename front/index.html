@@ -20,6 +20,12 @@
 						<label class="font-medium text-sm" for="file">JSON input</label>
 						<input type="file" id="file" accept=".json" />
 					</div>
+
+					<div class="form-group">
+						<label class="font-medium text-sm" for="max-iter">Max iterations</label>
+						<input type="number" min="0" step="1" id="max-iter" value="100" title="This influences the number of outputs. A value of 0 means infinite iterations. Increasing this value too high will impact performances or may hang your browser in case of an infinite loop." />
+					</div>
+
 					<div class="form-group">
 						<label class="font-medium">
 							<input type="checkbox" id="pretty" checked />
@@ -67,6 +73,7 @@
 			document.getElementById('gojq-version').textContent = gojq.gojqVersion
 			let prepared = gojq.prepare('{}')
 			const fileInput = document.getElementById('file')
+			const maxIterInput = /** @type {HTMLInputElement} */(document.getElementById('max-iter'))
 			const pretty = /** @type {HTMLInputElement} */(document.getElementById('pretty'))
 
 			require(['vs/editor/editor.main'], function () {
@@ -94,6 +101,10 @@
 					runQuery()
 				})
 
+				maxIterInput.addEventListener('change', () => {
+					runQuery()
+				})
+
 				fileInput.addEventListener('change', (e) => {
 					const file = e.target.files[0]
 					const reader = new FileReader()
@@ -105,7 +116,6 @@
 					reader.readAsText(file)
 				})
 
-				const maxIter = 100
 				let timeout = null
 				const delay = 200
 				function runQuery(query) {
@@ -114,6 +124,10 @@
 						timeout = null
 					}
 					timeout = window.setTimeout(() => {
+						let maxIter = parseInt(maxIterInput.value, 10)
+						if (isNaN(maxIter)) {
+							maxIter = 1
+						}
 						resultModel.setValue(prepared(queryModel.getValue(), pretty.checked, maxIter))
 					}, delay)
 				}

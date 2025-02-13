@@ -22,7 +22,7 @@ func execJq(queryStr string, data map[string]any, pretty bool, maxIter int) stri
 	out := ""
 	for {
 		curIter++
-		if curIter > maxIter {
+		if maxIter > 0 && curIter > maxIter {
 			break
 		}
 		v, ok := iter.Next()
