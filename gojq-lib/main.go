@@ -31,7 +31,7 @@ func stringParseError(queryStr string, err *gojq.ParseError) string {
 	return fmt.Sprintf("%s%s\n%s%s", prefix, lineBuf, strings.Repeat(" ", col+len(prefix)-len(err.Token))+strings.Repeat("^", len(err.Token))+"--- ", err.Error())
 }
 
-func execJq(queryStr string, data map[string]any, pretty bool, maxIter int) string {
+func execJq(queryStr string, data any, pretty bool, maxIter int) string {
 	query, err := gojq.Parse(queryStr)
 	if err != nil {
 		if err, ok := err.(*gojq.ParseError); ok {
@@ -91,7 +91,7 @@ func gojqWrapper() js.Value {
 		if len(args) < 1 {
 			return "Invalid arguments"
 		}
-		var data map[string]any
+		var data any
 		json.Unmarshal(
 			[]byte(args[0].String()),
 			&data,
