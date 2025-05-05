@@ -60,21 +60,54 @@
 	<script>
 		require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs' } });
 
-		const go = new Go();
-		WebAssembly.instantiateStreaming(
-			fetch("./script/gojs.wasm"),
-			go.importObject
-		).then((result) => {
-			go.run(result.instance);
-			run()
-		});
+		(function() {
+			const initialInfo = {
+				maxIterations: 100,
+				query: '.'
+			}
+			initInfo: try {
+				const params = new URLSearchParams(location.hash.slice(1))
+				const initDataStr = params.get('init')
+				if (!initDataStr) {
+					break initInfo
+				}
+				const initData = JSON.parse(initDataStr)
+				if (!initData || typeof initData !== 'object') {
+					break initInfo
+				}
+				if (typeof initData.maxIterations === 'number' && !isNaN(initData.maxIterations) && initData.maxIterations >= 0) {
+					initialInfo.maxIterations = initData.maxIterations
+				}
+				if (typeof initData.query === 'string') {
+					initialInfo.query = initData.query
+				}
+			} catch (e) {
+				console.error(e)
+			}
+			const go = new Go();
+			WebAssembly.instantiateStreaming(
+				fetch("./script/gojs.wasm"),
+				go.importObject
+			).then((result) => {
+				go.run(result.instance)
+				run(initialInfo)
+			})
+		})()
 
-		function run() {
+		function updateUrl(obj) {
+			const params = new URLSearchParams()
+			params.set('init', JSON.stringify(obj))
+			location.hash = `#?${params.toString()}`
+		}
+
+		function run(initialInfo) {
 			document.getElementById('gojq-version').textContent = gojq.gojqVersion
 			let prepared = gojq.prepare('{}')
 			const fileInput = document.getElementById('file')
 			const maxIterInput = /** @type {HTMLInputElement} */(document.getElementById('max-iter'))
 			const pretty = /** @type {HTMLInputElement} */(document.getElementById('pretty'))
+
+			maxIterInput.value = initialInfo.maxIterations
 
 			require(['vs/editor/editor.main'], function () {
 				monaco.languages.register({ id: 'jq' })
@@ -90,9 +123,22 @@
 					language: 'jq',
 					theme: 'vs-dark',
 					automaticLayout: true,
-					value: '.',
+					value: initialInfo.query,
 				})
 				const queryModel = queryEditor.getModel()
+				queryEditor.addAction({
+					id: "update-url",
+					label: "Save/Update URL",
+					keybindings: [
+						monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
+					],
+					run: function() {
+						updateUrl({
+							query: queryModel.getValue(),
+							maxIterations: maxIterInput.value?.length > 0 ? parseInt(maxIterInput.value, 10) : undefined,
+						})
+					}
+				})
 				queryModel.onDidChangeContent(() => {
 					runQuery()
 				})
