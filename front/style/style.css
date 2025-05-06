@@ -11,7 +11,9 @@ body {
 :root {
 	--bg: hsl(240, 11%, 4%);
 	--border: hsl(240, 6%, 25%);
+	--border-active: hsl(240, 21%, 28%);
 	--text: hsl(240, 17%, 91%);
+	--text-active: hsl(240, 66%, 83%);
 
 	--spacing-base: 16px;
 }
@@ -69,6 +71,13 @@ body {
 	color: var(--text);
 
 	padding: calc(var(--spacing-base) * 1.25);
+
+	transition: border-color 0.15s ease-out, color 0.15s ease-out;
+}
+
+.card[data-dropover=true] {
+	border-color: var(--border-active);
+	color: var(--text-active);
 }
 
 .gap-4 {

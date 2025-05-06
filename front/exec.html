@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>GOJQ web exec</title>
+	<link href="./style/style.css" rel="stylesheet">
+	<script src="./script/wasm_exec.js"></script>
+	<link href="https://cdn.jsdelivr.net/npm/vscode-codicons@0.0.17/dist/codicon.min.css" rel="stylesheet">
+	<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+</head>
+
+<body>
+	<div class="h-full flex flex-col gap-4 p-4">
+		<div id="drop-zone" class="card flex-grow">
+			<div class="flex flex-col gap-4">
+				<div>Drop your .json file(s) here</div>
+			</div>
+		</div>
+	</div>
+	<script>
+		(function() {
+			const initialInfo = {
+				maxIterations: 100,
+				query: '.'
+			}
+			initInfo: try {
+				const params = new URLSearchParams(location.hash.slice(1))
+				const initDataStr = params.get('init')
+				if (!initDataStr) {
+					break initInfo
+				}
+				const initData = JSON.parse(initDataStr)
+				if (!initData || typeof initData !== 'object') {
+					break initInfo
+				}
+				if (typeof initData.maxIterations === 'number' && !isNaN(initData.maxIterations) && initData.maxIterations >= 0) {
+					initialInfo.maxIterations = initData.maxIterations
+				}
+				if (typeof initData.query === 'string') {
+					initialInfo.query = initData.query
+				}
+			} catch (e) {
+				console.error(e)
+			}
+			const go = new Go();
+			WebAssembly.instantiateStreaming(
+				fetch("./script/gojs.wasm"),
+				go.importObject
+			).then((result) => {
+				go.run(result.instance)
+				run(initialInfo)
+			})
+		})()
+
+		function run(initialInfo) {
+			const dropZone = document.getElementById('drop-zone')
+			dropZone.addEventListener('drop', ev => {
+				ev.preventDefault()
+				dropZone.setAttribute('data-dropover', 'false')
+				if (ev.dataTransfer.items) {
+					for (let i = 0; i < ev.dataTransfer.items.length; i++) {
+						const item = ev.dataTransfer.items[i]
+						if (item.type !== 'text/plain' && item.type !== 'application/json') {
+							continue
+						}
+						switch (item.kind) {
+							case 'string':
+								item.getAsString((data) => {
+									transformData(`transformed_${i+1}.json`, data)
+								})
+								break
+							case 'file':
+								const file = item.getAsFile()
+								processFile(file)
+								break
+						}
+					}
+				} else {
+					for (let i = 0; i < ev.dataTransfer.files.length; i++) {
+						const file = ev.dataTransfer.files[i]
+						processFile(file)
+					}
+				}
+			})
+			dropZone.addEventListener('dragover', ev => {
+				ev.preventDefault()
+				dropZone.setAttribute('data-dropover', 'true')
+				ev.dataTransfer.effectAllowed = "copy"
+			})
+			dropZone.addEventListener('dragleave', () => {
+				dropZone.setAttribute('data-dropover', 'false')
+			})
+
+			function processFile(file) {
+				const reader = new FileReader()
+				reader.onload = (e) => {
+					transformData(`transformed_${file.name.indexOf('.') !== -1 ? file.name.slice(0, file.name.lastIndexOf('.')) : file.name}.json`, e.target.result)
+				}
+				reader.readAsText(file)
+			}
+
+			function transformData(filename, jsonData) {
+				try {
+					JSON.parse(jsonData)
+				} catch (e) {
+					console.error('Input data is not JSON valid, ignoring', e, '\n', filename, jsonData)
+					return
+				}
+
+				const prepared = gojq.prepare(jsonData)
+				const transformed = prepared(initialInfo.query, false, initialInfo.maxIterations)
+				const blob = new Blob([transformed], {type: "application/json;charset=utf-8"})
+				saveAs(blob, filename)
+			}
+		}
+	</script>
+</body>
+
+</html>
