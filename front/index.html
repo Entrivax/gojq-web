@@ -31,6 +31,10 @@
 							<input type="checkbox" id="pretty" checked />
 							<span class="ml-2 text-sm">Pretty print</span>
 						</label>
+						<label class="font-medium">
+							<input type="checkbox" id="diff" />
+							<span class="ml-2 text-sm">Show diff</span>
+						</label>
 					</div>
 				</div>
 			</div>
@@ -106,19 +110,15 @@
 			const fileInput = document.getElementById('file')
 			const maxIterInput = /** @type {HTMLInputElement} */(document.getElementById('max-iter'))
 			const pretty = /** @type {HTMLInputElement} */(document.getElementById('pretty'))
+			const diff = /** @type {HTMLInputElement} */(document.getElementById('diff'))
+			let lastEditor = null
 
 			maxIterInput.value = initialInfo.maxIterations
 
 			require(['vs/editor/editor.main'], function () {
+				let updateOriginal = () => {}
 				monaco.languages.register({ id: 'jq' })
 				monaco.languages.setMonarchTokensProvider('jq', jqLanguageTokens());
-				const resultEditor = monaco.editor.create(document.querySelector('.result'), {
-					language: 'json',
-					theme: 'vs-dark',
-					automaticLayout: true,
-					readOnly: true
-				})
-				const resultModel = resultEditor.getModel()
 				const queryEditor = monaco.editor.create(document.querySelector('.query-editor'), {
 					language: 'jq',
 					theme: 'vs-dark',
@@ -144,10 +144,18 @@
 				})
 
 				pretty.addEventListener('change', () => {
+					updateOriginal()
+					runQuery()
+				})
+
+				diff.addEventListener('change', () => {
+					initResultEditor()
+					updateOriginal()
 					runQuery()
 				})
 
 				maxIterInput.addEventListener('change', () => {
+					updateOriginal()
 					runQuery()
 				})
 
@@ -157,6 +165,14 @@
 					reader.onload = (e) => {
 						const text = e.target.result
 						prepared = gojq.prepare(text)
+						updateOriginal = () => {
+							let maxIter = parseInt(maxIterInput.value, 10)
+							if (isNaN(maxIter)) {
+								maxIter = 1
+							}
+							lastEditor.setOriginal?.(prepared('.', pretty.checked, maxIter))
+						}
+						updateOriginal()
 						runQuery()
 					}
 					reader.readAsText(file)
@@ -174,12 +190,69 @@
 						if (isNaN(maxIter)) {
 							maxIter = 1
 						}
-						resultModel.setValue(prepared(queryModel.getValue(), pretty.checked, maxIter))
+						lastEditor.setModified(prepared(queryModel.getValue(), pretty.checked, maxIter))
 					}, delay)
 				}
 
+				initResultEditor()
 				runQuery()
 			})
+
+			function initResultEditor() {
+				if (lastEditor) {
+					lastEditor.dispose()
+					lastEditor = null
+				}
+				const editorContainer = document.querySelector('.result')
+				editorContainer.innerHTML = ''
+				if (diff.checked) {
+					const resultEditor = monaco.editor.createDiffEditor(document.querySelector('.result'), {
+						theme: 'vs-dark',
+						automaticLayout: true,
+						readOnly: true,
+						// Render the diff inline
+						renderSideBySide: false,
+					})
+					const originalModel = monaco.editor.createModel('', 'json')
+					const modifiedModel = monaco.editor.createModel('', 'json')
+					resultEditor.setModel({
+						original: originalModel,
+						modified: modifiedModel
+					})
+					lastEditor = {
+						editor: resultEditor,
+						setOriginal: (text) => {
+							originalModel.setValue(text)
+						},
+						setModified: (text) => {
+							modifiedModel.setValue(text)
+						},
+						dispose: () => {
+							resultEditor.dispose()
+							originalModel.dispose()
+							modifiedModel.dispose()
+						}
+					}
+					return
+				}
+				const resultEditor = monaco.editor.create(document.querySelector('.result'), {
+					language: 'json',
+					theme: 'vs-dark',
+					automaticLayout: true,
+					readOnly: true
+				})
+				const resultModel = resultEditor.getModel()
+				lastEditor = {
+					editor: resultEditor,
+					setOriginal: null,
+					setModified: (text) => {
+						resultModel.setValue(text)
+					},
+					dispose: () => {
+						resultEditor.dispose()
+					}
+				}
+			}
 		}
 
 		/**
