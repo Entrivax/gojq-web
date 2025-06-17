@@ -50,13 +50,13 @@
 			<div class="w-1/2 overflow-hidden card">
 				<div class="form-group h-full">
 					<div class="font-medium text-sm block">GOJQ Query</div>
-					<div class="query-editor editor"></div>
+					<monaco-editor class="query-editor" data-language="jq" data-theme="vs-dark"></monaco-editor>
 				</div>
 			</div>
 			<div class="w-1/2 overflow-hidden card">
 				<div class="form-group h-full">
 					<div class="font-medium text-sm block">Result</div>
-					<div class="result editor"></div>
+					<div class="result"></div>
 				</div>
 			</div>
 		</div>
@@ -98,6 +98,161 @@
 			})
 		})()
 
+		class MonacoEditorElement extends HTMLElement {
+			#editor
+			#model
+			#tmpValue
+			#actions = []
+			constructor() {
+				super()
+			}
+			connectedCallback() {
+				this.#disposeEditor()
+				this.#editor = monaco.editor.create(this, this.#getEditorOptions())
+				for (let i = 0; i < this.#actions.length; i++) {
+					this.#editor.addAction(this.#actions[i])
+				}
+				this.#model = this.#editor.getModel()
+				if (this.#tmpValue != null) {
+					this.#model.setValue(this.#tmpValue)
+					this.#tmpValue = null
+				}
+				this.#model.onDidChangeContent(() => {
+					this.dispatchEvent(new Event('changecontent'))
+				})
+			}
+			disconnectedCallback() {
+				this.#disposeEditor()
+			}
+			static observedAttributes = ["data-language", "data-theme", "data-readonly"]
+			attributeChangedCallback() {
+				if (!this.#editor) {
+					return
+				}
+				this.#editor.updateOptions(this.#getEditorOptions())
+			}
+
+			setValue(value) {
+				if (this.#model) {
+					this.#model.setValue(value)
+				} else {
+					this.#tmpValue = value
+				}
+			}
+
+			getValue() {
+				if (this.#model) {
+					return this.#model.getValue()
+				}
+				return this.#tmpValue
+			}
+			
+			addAction(action) {
+				this.#actions.push(action)
+				if (this.#editor) {
+					this.#editor.addAction(action)
+				}
+			}
+
+			#getEditorOptions() {
+				return {
+					language: this.getAttribute('data-language'),
+					theme: this.getAttribute('data-theme'),
+					automaticLayout: true,
+					readOnly: this.hasAttribute('data-readonly') && this.getAttribute('data-readonly') !== 'false'
+				}
+			}
+
+			#disposeEditor() {
+				this.#tmpValue = this.#model?.getValue()
+				this.#editor?.dispose()
+				this.#model = null
+				this.#editor = null
+			}
+		}
+
+		class MonacoDiffEditor extends HTMLElement {
+			#editor
+			#originalModel
+			#modifiedModel
+			#tmpOriginalValue
+			#tmpModifiedValue
+			#lastLanguage
+			constructor() {
+				super()
+			}
+			connectedCallback() {
+				this.#disposeEditor()
+				this.#editor = monaco.editor.createDiffEditor(this, this.#getEditorOptions())
+				this.#originalModel = monaco.editor.createModel(this.#tmpOriginalValue || '', this.getAttribute('data-language'))
+				this.#modifiedModel = monaco.editor.createModel(this.#tmpModifiedValue || '', this.getAttribute('data-language'))
+				this.#editor.setModel({
+					original: this.#originalModel,
+					modified: this.#modifiedModel,
+				})
+			}
+			disconnectedCallback() {
+				this.#disposeEditor()
+			}
+			static observedAttributes = ["data-language", "data-theme", "data-rendersidebyside"]
+			attributeChangedCallback() {
+				if (!this.#editor) {
+					return
+				}
+				if (this.#lastLanguage !== this.getAttribute('data-language')) {
+					this.#tmpOriginalValue = this.#originalModel.getValue()
+					this.#tmpModifiedValue = this.#modifiedModel.getValue()
+					const prevOriginalModel = this.#originalModel
+					const prevModifiedModel = this.modifiedModel
+					this.#originalModel = monaco.editor.createModel(this.#tmpOriginalValue || '', this.getAttribute('data-language'))
+					this.#modifiedModel = monaco.editor.createModel(this.#tmpModifiedValue || '', this.getAttribute('data-language'))
+					this.#editor.setModel({
+						original: this.#originalModel,
+						modified: this.#modifiedModel,
+					})
+					prevOriginalModel?.dispose()
+					prevModifiedModel?.dispose()
+				}
+				this.#editor.updateOptions(this.#getEditorOptions())
+			}
+
+			setOriginalValue(value) {
+				if (this.#originalModel) {
+					this.#originalModel.setValue(value)
+				} else {
+					this.#tmpOriginalValue = value
+				}
+			}
+
+			setValue(value) {
+				if (this.#modifiedModel) {
+					this.#modifiedModel.setValue(value)
+				} else {
+					this.#tmpModifiedValue = value
+				}
+			}
+
+			#getEditorOptions() {
+				return {
+					theme: this.getAttribute('data-theme'),
+					automaticLayout: true,
+					readOnly: true,
+					renderSideBySide: this.hasAttribute('data-rendersidebyside') && this.getAttribute('data-rendersidebyside') !== 'false'
+				}
+			}
+
+			#disposeEditor() {
+				this.#tmpOriginalValue = this.#originalModel?.getValue()
+				this.#tmpModifiedValue = this.#modifiedModel?.getValue()
+				this.#editor?.dispose()
+				this.#originalModel?.dispose()
+				this.#modifiedModel?.dispose()
+				this.#tmpOriginalValue = null
+				this.#tmpModifiedValue = null
+				this.#editor = null
+			}
+		}
+
 		function updateUrl(obj) {
 			const params = new URLSearchParams()
 			params.set('init', JSON.stringify(obj))
@@ -106,7 +261,8 @@
 
 		function run(initialInfo) {
 			document.getElementById('gojq-version').textContent = gojq.gojqVersion
-			let prepared = gojq.prepare('{}')
+			let data = '{}'
+			let prepared = gojq.prepare(data)
 			const fileInput = document.getElementById('file')
 			const maxIterInput = /** @type {HTMLInputElement} */(document.getElementById('max-iter'))
 			const pretty = /** @type {HTMLInputElement} */(document.getElementById('pretty'))
@@ -116,16 +272,19 @@
 			maxIterInput.value = initialInfo.maxIterations
 
 			require(['vs/editor/editor.main'], function () {
-				let updateOriginal = () => {}
+				setupCustomElements()
+				let updateOriginal = () => {
+					let maxIter = parseInt(maxIterInput.value, 10)
+					if (isNaN(maxIter)) {
+						maxIter = 1
+					}
+					lastEditor?.setOriginal?.(prepared('.', pretty.checked, maxIter))
+				}
 				monaco.languages.register({ id: 'jq' })
 				monaco.languages.setMonarchTokensProvider('jq', jqLanguageTokens());
-				const queryEditor = monaco.editor.create(document.querySelector('.query-editor'), {
-					language: 'jq',
-					theme: 'vs-dark',
-					automaticLayout: true,
-					value: initialInfo.query,
-				})
-				const queryModel = queryEditor.getModel()
+
+				const queryEditor = /** @type {MonacoEditorElement} */(document.querySelector('.query-editor'))
+
 				queryEditor.addAction({
 					id: "update-url",
 					label: "Save/Update URL",
@@ -134,12 +293,15 @@
 					],
 					run: function() {
 						updateUrl({
-							query: queryModel.getValue(),
+							query: queryEditor.getValue(),
 							maxIterations: maxIterInput.value?.length > 0 ? parseInt(maxIterInput.value, 10) : undefined,
 						})
 					}
 				})
-				queryModel.onDidChangeContent(() => {
+
+				queryEditor.setValue(initialInfo.query)
+
+				queryEditor.addEventListener('changecontent', () => {
 					runQuery()
 				})
 
@@ -165,13 +327,6 @@
 					reader.onload = (e) => {
 						const text = e.target.result
 						prepared = gojq.prepare(text)
-						updateOriginal = () => {
-							let maxIter = parseInt(maxIterInput.value, 10)
-							if (isNaN(maxIter)) {
-								maxIter = 1
-							}
-							lastEditor.setOriginal?.(prepared('.', pretty.checked, maxIter))
-						}
 						updateOriginal()
 						runQuery()
 					}
@@ -190,7 +345,7 @@
 						if (isNaN(maxIter)) {
 							maxIter = 1
 						}
-						lastEditor.setModified(prepared(queryModel.getValue(), pretty.checked, maxIter))
+						lastEditor.setModified?.(prepared(queryEditor.getValue(), pretty.checked, maxIter))
 					}, delay)
 				}
 
@@ -199,60 +354,44 @@
 			})
 
 			function initResultEditor() {
-				if (lastEditor) {
-					lastEditor.dispose()
-					lastEditor = null
-				}
-				const editorContainer = document.querySelector('.result')
-				editorContainer.innerHTML = ''
+				const previousEditor = document.querySelector('.result')
 				if (diff.checked) {
-					const resultEditor = monaco.editor.createDiffEditor(document.querySelector('.result'), {
-						theme: 'vs-dark',
-						automaticLayout: true,
-						readOnly: true,
-						// Render the diff inline
-						renderSideBySide: false,
-					})
-					const originalModel = monaco.editor.createModel('', 'json')
-					const modifiedModel = monaco.editor.createModel('', 'json')
-					resultEditor.setModel({
-						original: originalModel,
-						modified: modifiedModel
-					})
+					const editor = /** @type {MonacoDiffEditorElement} */(document.createElement('monaco-diff-editor'))
+					editor.className = previousEditor.className
+					editor.setAttribute('data-theme', 'vs-dark')
+					editor.setAttribute('data-readonly', 'true')
+					editor.setAttribute('data-rendersidebyside', 'false')
+					editor.setAttribute('data-language', 'json')
 					lastEditor = {
-						editor: resultEditor,
 						setOriginal: (text) => {
-							originalModel.setValue(text)
+							editor.setOriginalValue(text)
 						},
 						setModified: (text) => {
-							modifiedModel.setValue(text)
-						},
-						dispose: () => {
-							resultEditor.dispose()
-							originalModel.dispose()
-							modifiedModel.dispose()
+							editor.setValue(text)
 						}
 					}
+
+					previousEditor.replaceWith(editor)
 					return
 				}
-				const resultEditor = monaco.editor.create(document.querySelector('.result'), {
-					language: 'json',
-					theme: 'vs-dark',
-					automaticLayout: true,
-					readOnly: true
-				})
-				const resultModel = resultEditor.getModel()
+				const editor = /** @type {MonacoDiffEditorElement} */(document.createElement('monaco-editor'))
+				editor.className = previousEditor.className
+				editor.setAttribute('data-theme', 'vs-dark')
+				editor.setAttribute('data-readonly', 'true')
+				editor.setAttribute('data-language', 'json')
 				lastEditor = {
-					editor: resultEditor,
 					setOriginal: null,
 					setModified: (text) => {
-						resultModel.setValue(text)
-					},
-					dispose: () => {
-						resultEditor.dispose()
+						editor.setValue(text)
 					}
 				}
+				previousEditor.replaceWith(editor)
 			}
+		}
+
+		function setupCustomElements() {
+			window.customElements.define('monaco-editor', MonacoEditorElement)
+			window.customElements.define('monaco-diff-editor', MonacoDiffEditor)
 		}
 
 		/**

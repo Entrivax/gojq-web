@@ -118,7 +118,8 @@ body {
 	gap: calc(var(--spacing-base) * 0.5);
 }
 
-.editor {
+monaco-editor,
+monaco-diff-editor {
 	flex: 1;
 	min-height: 0px;
 }
