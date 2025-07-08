@@ -27,10 +27,15 @@
 					</div>
 
 					<div class="form-group">
-						<label class="font-medium">
-							<input type="checkbox" id="pretty" checked />
-							<span class="ml-2 text-sm">Pretty print</span>
-						</label>
+						<div class="form-group flex-col">
+							<label for="output-mode" class="font-medium text-sm">Output mode</label>
+							<select id="output-mode" class="ml-2">
+								<option value="json">JSON</option>
+								<option value="json-pretty" selected>JSON Prettyfied</option>
+								<option value="raw">Raw</option>
+							</select>
+						</div>
+
 						<label class="font-medium">
 							<input type="checkbox" id="diff" />
 							<span class="ml-2 text-sm">Show diff</span>
@@ -67,7 +72,8 @@
 		(function() {
 			const initialInfo = {
 				maxIterations: 100,
-				query: '.'
+				query: '.',
+				outputMode: 'json-pretty'
 			}
 			initInfo: try {
 				const params = new URLSearchParams(location.hash.slice(1))
@@ -84,6 +90,9 @@
 				}
 				if (typeof initData.query === 'string') {
 					initialInfo.query = initData.query
+				}
+				if (typeof initData.outputMode === 'string') {
+					initialInfo.outputMode = initData.outputMode
 				}
 			} catch (e) {
 				console.error(e)
@@ -265,11 +274,12 @@
 			let prepared = gojq.prepare(data)
 			const fileInput = document.getElementById('file')
 			const maxIterInput = /** @type {HTMLInputElement} */(document.getElementById('max-iter'))
-			const pretty = /** @type {HTMLInputElement} */(document.getElementById('pretty'))
+			const outputModeSelect = /** @type {HTMLSelectElement} */(document.getElementById('output-mode'))
 			const diff = /** @type {HTMLInputElement} */(document.getElementById('diff'))
 			let lastEditor = null
 
 			maxIterInput.value = initialInfo.maxIterations
+			outputModeSelect.value = initialInfo.outputMode
 
 			require(['vs/editor/editor.main'], function () {
 				setupCustomElements()
@@ -278,7 +288,7 @@
 					if (isNaN(maxIter)) {
 						maxIter = 1
 					}
-					lastEditor?.setOriginal?.(prepared('.', pretty.checked, maxIter))
+					lastEditor?.setOriginal?.(prepared('.', outputModeSelect.value, maxIter))
 				}
 				monaco.languages.register({ id: 'jq' })
 				monaco.languages.setMonarchTokensProvider('jq', jqLanguageTokens());
@@ -295,6 +305,7 @@
 						updateUrl({
 							query: queryEditor.getValue(),
 							maxIterations: maxIterInput.value?.length > 0 ? parseInt(maxIterInput.value, 10) : undefined,
+							outputMode: outputModeSelect.value
 						})
 					}
 				})
@@ -305,7 +316,7 @@
 					runQuery()
 				})
 
-				pretty.addEventListener('change', () => {
+				outputModeSelect.addEventListener('change', () => {
 					updateOriginal()
 					runQuery()
 				})
@@ -345,7 +356,7 @@
 						if (isNaN(maxIter)) {
 							maxIter = 1
 						}
-						lastEditor.setModified?.(prepared(queryEditor.getValue(), pretty.checked, maxIter))
+						lastEditor.setModified?.(prepared(queryEditor.getValue(), outputModeSelect.value, maxIter))
 					}, delay)
 				}
 

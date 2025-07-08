@@ -28,6 +28,12 @@ body {
 	color: var(--text);
 }
 
+.form-group {
+	display: flex;
+	flex-direction: column;
+	gap: calc(var(--spacing-base) * 0.5);
+}
+
 .flex {
 	display: flex;
 }
@@ -110,12 +116,6 @@ body {
 
 .font-normal {
 	font-weight: 400;
-}
-
-.form-group {
-	display: flex;
-	flex-direction: column;
-	gap: calc(var(--spacing-base) * 0.5);
 }
 
 monaco-editor,

@@ -14,6 +14,27 @@ import (
 
 var gojqVersion = "unknown"
 
+type OutputMode int
+
+const (
+	OutputModeJSON OutputMode = iota
+	OutputModeJSONPretty
+	OutputModeRaw
+)
+
+func NewOutputMode(mode string) OutputMode {
+	switch mode {
+	case "json":
+		return OutputModeJSON
+	case "json-pretty":
+		return OutputModeJSONPretty
+	case "raw":
+		return OutputModeRaw
+	default:
+		return OutputModeJSON
+	}
+}
+
 func stringParseError(queryStr string, err *gojq.ParseError) string {
 	line := 0
 	lineBuf := ""
@@ -31,7 +52,7 @@ func stringParseError(queryStr string, err *gojq.ParseError) string {
 	return fmt.Sprintf("%s%s\n%s%s", prefix, lineBuf, strings.Repeat(" ", col+len(prefix)-len(err.Token))+strings.Repeat("^", len(err.Token))+"--- ", err.Error())
 }
 
-func execJq(queryStr string, data any, pretty bool, maxIter int) string {
+func execJq(queryStr string, data any, outputMode OutputMode, maxIter int) string {
 	query, err := gojq.Parse(queryStr)
 	if err != nil {
 		if err, ok := err.(*gojq.ParseError); ok {
@@ -55,18 +76,29 @@ func execJq(queryStr string, data any, pretty bool, maxIter int) string {
 			return err.Error()
 		}
 		serialized := []byte{}
-		if pretty {
-			serialized, err = json.MarshalIndent(v, "", "\t")
-			if err != nil {
-				return err.Error()
-			}
-		} else {
+		switch outputMode {
+		case OutputModeJSON:
 			serialized, err = json.Marshal(v)
 			if err != nil {
 				return err.Error()
 			}
+			out += string(serialized) + "\n"
+		case OutputModeJSONPretty:
+			serialized, err = json.MarshalIndent(v, "", "\t")
+			if err != nil {
+				return err.Error()
+			}
+			out += string(serialized) + "\n"
+		case OutputModeRaw:
+			if str, ok := v.(string); ok {
+				out += str
+			} else {
+				if curIter > 0 {
+					out += "\n"
+				}
+				out += fmt.Sprintf("%v", v)
+			}
 		}
-		out += string(serialized) + "\n"
 	}
 
 	return strings.TrimSpace(out)
@@ -84,7 +116,7 @@ func gojqWrapper() js.Value {
 			[]byte(args[1].String()),
 			&data,
 		)
-		return execJq(args[0].String(), data, args[2].Bool(), args[3].Int())
+		return execJq(args[0].String(), data, NewOutputMode(args[2].String()), args[3].Int())
 	})
 
 	wrapper["prepare"] = js.FuncOf(func(this js.Value, args []js.Value) any {
@@ -100,7 +132,7 @@ func gojqWrapper() js.Value {
 			if len(args) < 3 {
 				return "Invalid arguments"
 			}
-			return execJq(args[0].String(), data, args[1].Bool(), args[2].Int())
+			return execJq(args[0].String(), data, NewOutputMode(args[1].String()), args[2].Int())
 		})
 	})
 
