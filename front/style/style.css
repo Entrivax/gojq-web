@@ -10,6 +10,7 @@ body {
 
 :root {
 	--bg: hsl(240, 11%, 4%);
+	--bg-active: hsl(240, 11%, 8%);
 	--border: hsl(240, 6%, 25%);
 	--border-active: hsl(240, 21%, 28%);
 	--text: hsl(240, 17%, 91%);
@@ -93,9 +94,16 @@ body {
 .p-4 {
 	padding: var(--spacing-base);
 }
+.mb-1 {
+	margin-bottom: calc(var(--spacing-base) * 0.25);
+}
 
 .overflow-hidden {
 	overflow: hidden;
+}
+
+.hidden {
+	display: none;
 }
 
 .text-sm {
@@ -116,6 +124,34 @@ body {
 
 .font-normal {
 	font-weight: 400;
+}
+
+.tab {
+	position: relative;
+	cursor: pointer;
+}
+
+.tab > input {
+	position: absolute;
+	opacity: 0;
+	top: 0;
+	left: 0;
+	pointer-events: none;
+	clip: rect(0, 0, 0, 0);
+	appearance: none;
+}
+
+.tab > div {
+	padding: calc(var(--spacing-base) * 0.25) calc(var(--spacing-base) * 0.75);
+	border: 1px solid transparent;
+	background-color: var(--bg);
+	color: var(--text);
+	transition: all 0.15s ease-out;
+	font-size: 0.875rem;
+}
+.tab > input:checked + div {
+	border-bottom-color: var(--border-active);
+	background-color: var(--bg-active);
 }
 
 monaco-editor,

@@ -53,9 +53,19 @@
 		</div>
 		<div class="flex flex-row flex-grow w-full overflow-hidden gap-4">
 			<div class="w-1/2 overflow-hidden card">
-				<div class="form-group h-full">
-					<div class="font-medium text-sm block">GOJQ Query</div>
-					<monaco-editor class="query-editor" data-language="jq" data-theme="vs-dark"></monaco-editor>
+				<div class="flex flex-col h-full">
+					<form class="flex flex-row mb-1" id="input-select-form">
+						<label class="tab">
+							<input type="radio" name="input-select" value="query-editor" checked>
+							<div>GOJQ Query</div>
+						</label>
+						<label class="tab">
+							<input type="radio" name="input-select" value="input-editor">
+							<div>input.json</div>
+						</label>
+					</form>
+					<monaco-editor id="query-editor" class="query-editor" data-language="jq" data-theme="vs-dark"></monaco-editor>
+					<monaco-editor id="input-editor" class="query-editor hidden" data-language="json" data-theme="vs-dark"></monaco-editor>
 				</div>
 			</div>
 			<div class="w-1/2 overflow-hidden card">
@@ -270,16 +280,30 @@
 
 		function run(initialInfo) {
 			document.getElementById('gojq-version').textContent = gojq.gojqVersion
-			let data = '{}'
-			let prepared = gojq.prepare(data)
+			let prepared = null
 			const fileInput = document.getElementById('file')
 			const maxIterInput = /** @type {HTMLInputElement} */(document.getElementById('max-iter'))
 			const outputModeSelect = /** @type {HTMLSelectElement} */(document.getElementById('output-mode'))
 			const diff = /** @type {HTMLInputElement} */(document.getElementById('diff'))
+			const inputSelectForm = /** @type {HTMLFormElement} */(document.getElementById('input-select-form'))
 			let lastEditor = null
 
 			maxIterInput.value = initialInfo.maxIterations
 			outputModeSelect.value = initialInfo.outputMode
+
+			inputSelectForm.addEventListener('change', (e) => {
+				const formData = new FormData(inputSelectForm)
+				switch (formData.get('input-select')) {
+					case 'query-editor':
+						document.querySelector('#query-editor').classList.remove('hidden')
+						document.querySelector('#input-editor').classList.add('hidden')
+						break;
+					case 'input-editor':
+						document.querySelector('#query-editor').classList.add('hidden')
+						document.querySelector('#input-editor').classList.remove('hidden')
+						break;
+				}
+			})
 
 			require(['vs/editor/editor.main'], function () {
 				setupCustomElements()
@@ -288,12 +312,13 @@
 					if (isNaN(maxIter)) {
 						maxIter = 1
 					}
-					lastEditor?.setOriginal?.(prepared('.', outputModeSelect.value, maxIter))
+					lastEditor?.setOriginal?.(prepared?.('.', outputModeSelect.value, maxIter))
 				}
 				monaco.languages.register({ id: 'jq' })
 				monaco.languages.setMonarchTokensProvider('jq', jqLanguageTokens());
 
-				const queryEditor = /** @type {MonacoEditorElement} */(document.querySelector('.query-editor'))
+				const queryEditor = /** @type {MonacoEditorElement} */(document.querySelector('#query-editor'))
+				const inputEditor = /** @type {MonacoEditorElement} */(document.querySelector('#input-editor'))
 
 				queryEditor.addAction({
 					id: "update-url",
@@ -314,6 +339,10 @@
 
 				queryEditor.addEventListener('changecontent', () => {
 					runQuery()
+				})
+
+				inputEditor.addEventListener('changecontent', () => {
+					throttledLoadInput()
 				})
 
 				outputModeSelect.addEventListener('change', () => {
@@ -337,12 +366,27 @@
 					const reader = new FileReader()
 					reader.onload = (e) => {
 						const text = e.target.result
-						prepared = gojq.prepare(text)
-						updateOriginal()
-						runQuery()
+						inputEditor.setValue(text)
 					}
 					reader.readAsText(file)
 				})
+
+				let loadInputTimeout = null
+				function throttledLoadInput() {
+					if (loadInputTimeout != null) {
+						window.clearTimeout(loadInputTimeout)
+					}
+					loadInputTimeout = window.setTimeout(() => {
+						loadInput()
+					}, 500)
+				}
+
+				function loadInput() {
+					const input = inputEditor.getValue()
+					prepared = gojq.prepare(input)
+					updateOriginal()
+					runQuery()
+				}
 
 				let timeout = null
 				const delay = 200
@@ -352,6 +396,9 @@
 						timeout = null
 					}
 					timeout = window.setTimeout(() => {
+						if (!prepared) {
+							return
+						}
 						let maxIter = parseInt(maxIterInput.value, 10)
 						if (isNaN(maxIter)) {
 							maxIter = 1
