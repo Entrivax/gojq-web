@@ -91,12 +91,9 @@ func execJq(queryStr string, data any, outputMode OutputMode, maxIter int) strin
 			out += string(serialized) + "\n"
 		case OutputModeRaw:
 			if str, ok := v.(string); ok {
-				out += str
+				out += str + "\n"
 			} else {
-				if curIter > 0 {
-					out += "\n"
-				}
-				out += fmt.Sprintf("%v", v)
+				out += fmt.Sprintf("%v\n", v)
 			}
 		}
 	}
