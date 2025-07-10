@@ -65,7 +65,7 @@ func execJq(queryStr string, data any, outputMode OutputMode, maxIter int) strin
 	out := ""
 	for {
 		curIter++
-		if maxIter > 0 && curIter > maxIter {
+		if maxIter > 0 && curIter >= maxIter {
 			break
 		}
 		v, ok := iter.Next()

@@ -86,7 +86,7 @@
 			</div>
 
 			<div class="flex flex-end gap-2 justify-end">
-				<button class="button button-secondary" data-close>Close</button>
+				<button class="button button-secondary" data-close type="button">Close</button>
 				<button class="button" type="submit">Validate</button>
 			</div>
 		</form>
@@ -105,7 +105,7 @@
 			</div>
 
 			<div class="flex flex-end gap-2 justify-end">
-				<button class="button button-secondary" data-close>Close</button>
+				<button class="button button-secondary" data-close type="button">Close</button>
 			</div>
 		</div>
 	</dialog>
@@ -367,11 +367,7 @@
 			require(['vs/editor/editor.main'], function () {
 				setupCustomElements()
 				let updateOriginal = () => {
-					let maxIter = parseInt(maxIterInput.value, 10)
-					if (isNaN(maxIter)) {
-						maxIter = 1
-					}
-					lastEditor?.setOriginal?.(prepared?.('.', outputModeSelect.value, maxIter))
+					lastEditor?.setOriginal?.(prepared?.('.', initialInfo.outputMode, initialInfo.maxIterations))
 				}
 				monaco.languages.register({ id: 'jq' })
 				monaco.languages.setMonarchTokensProvider('jq', jqLanguageTokens());
@@ -542,11 +538,7 @@
 						if (!prepared) {
 							return
 						}
-						let maxIter = parseInt(maxIterInput.value, 10)
-						if (isNaN(maxIter)) {
-							maxIter = 1
-						}
-						lastEditor.setModified?.(prepared(queryEditor.getValue(), outputModeSelect.value, maxIter))
+						lastEditor.setModified?.(prepared(queryEditor.getValue(), initialInfo.outputMode, initialInfo.maxIterations))
 					}, delay)
 				}
 
