@@ -310,6 +310,46 @@ dialog:not([open]) {
 	}
 }
 
+.drop-overlay {
+	display: none;
+	z-index: 1000;
+	position: fixed;
+	inset: 0;
+	align-items: center;
+	justify-content: center;
+	padding: calc(var(--spacing-base) * 2);
+	background-color: rgba(0, 0, 0, 0.5);
+	backdrop-filter: blur(5px);
+	transition: display 0.15s ease-out allow-discrete, opacity 0.15s ease-in-out;
+	opacity: 0;
+}
+
+.drop-overlay > div {
+	display: flex;
+	width: 100%;
+	height: 100%;
+	inset: 0;
+	border: 4px dashed var(--border);
+	border-radius: 8px;
+	align-items: center;
+	justify-content: center;
+	font-size: 1.25rem;
+	font-weight: 500;
+}
+body[data-dropover=true] .drop-overlay {
+	display: flex;
+	opacity: 1;
+}
+.drop-overlay > * {
+	pointer-events: none;
+}
+
+@starting-style {
+	body[data-dropover=true] .drop-overlay {
+		opacity: 0;
+	}
+}
+
 monaco-editor,
 monaco-diff-editor {
 	flex: 1;

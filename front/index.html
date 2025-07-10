@@ -53,6 +53,11 @@
 			</div>
 		</div>
 	</div>
+	<div class="drop-overlay">
+		<div>
+			Drop your .json file here
+		</div>
+	</div>
 	<dialog id="settings-dialog">
 		<form id="settings-form" class="flex flex-col gap-4">
 			<div>
@@ -455,6 +460,58 @@
 						reader.readAsText(file)
 					}
 					fileInput.click()
+				})
+
+				const dropZoneTrigger = document.body
+				const dropZoneOverlay = document.querySelector('.drop-overlay')
+				dropZoneTrigger.addEventListener('drop', ev => {
+					ev.preventDefault()
+					dropZoneTrigger.setAttribute('data-dropover', 'false')
+					if (ev.dataTransfer.items) {
+						for (let i = 0; i < ev.dataTransfer.items.length; i++) {
+							const item = ev.dataTransfer.items[i]
+							if (item.type !== 'text/plain' && item.type !== 'application/json') {
+								continue
+							}
+							switch (item.kind) {
+								case 'string':
+									item.getAsString((data) => {
+										inputEditor.setValue(data)
+									})
+									break
+								case 'file':
+									const file = item.getAsFile()
+									processFile(file)
+									break
+							}
+						}
+					} else {
+						for (let i = 0; i < ev.dataTransfer.files.length; i++) {
+							const file = ev.dataTransfer.files[i]
+							processFile(file)
+						}
+					}
+
+					function processFile(file) {
+						const reader = new FileReader()
+						reader.onload = (e) => {
+							const text = e.target.result
+							inputEditor.setValue(text)
+						}
+						reader.readAsText(file)
+					}
+				})
+				dropZoneTrigger.addEventListener('dragover', ev => {
+					ev.preventDefault()
+					dropZoneTrigger.setAttribute('data-dropover', 'true')
+					ev.dataTransfer.effectAllowed = "copy"
+				})
+				dropZoneTrigger.addEventListener('dragleave', (event) => {
+					if (event.toElement !== dropZoneOverlay) {
+						return
+					}
+					console.log(event)
+					dropZoneTrigger.setAttribute('data-dropover', 'false')
 				})
 
 				let loadInputTimeout = null
