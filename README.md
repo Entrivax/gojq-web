@@ -4,12 +4,12 @@ It is a simple wrapper around [itchyny/gojq](https://github.com/itchyny/gojq), c
 Its main goal is to test your queries before using them with [gojq](https://github.com/itchyny/gojq) or [jq](https://github.com/jqlang/jq) (be warned of [the differences](https://github.com/itchyny/gojq?tab=readme-ov-file#difference-to-jq)).
 
 ## Screenshot
-![Web UI screenshot](./assets/image.png)
+![Web UI screenshot](./assets/image.gif)
 
 ## How to use
 - Select a JSON file with the file input
 - Compose your query
-- You have the result (limited to 100 entries for now) on the right editor.
+- You have the result on the right editor.
 
 ## How to build
 

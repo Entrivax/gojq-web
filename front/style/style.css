@@ -2,10 +2,12 @@
 
 html,
 body {
-	height: 100%;
+	min-height: 100dvh;
+	height: 100dvh;
 	border: 0;
 	padding: 0;
 	margin: 0;
+	box-sizing: border-box;
 }
 
 :root {
@@ -13,26 +15,110 @@ body {
 	--bg-active: hsl(240, 11%, 8%);
 	--border: hsl(240, 6%, 25%);
 	--border-active: hsl(240, 21%, 28%);
+	--input: hsl(240, 6%, 10%);
+	--input-shadow-focused: hsla(240, 53%, 92%, 0.4);
 	--text: hsl(240, 17%, 91%);
 	--text-active: hsl(240, 66%, 83%);
+
+	--primary: hsl(240, 1%, 90%);
+	--primary-hover: hsl(240, 1%, 81%);
+	--primary-foreground: hsl(240, 2%, 9%);
+	--secondary: hsl(240, 2%, 10%);
+	--secondary-hover: hsl(240, 2%, 20%);
+	--secondary-foreground: hsl(240, 2%, 90%);
 
 	--spacing-base: 16px;
 }
 
-* {
+*, *::before, *::after {
 	box-sizing: border-box;
 }
 
-body {
+body, dialog {
 	font-family: 'Poppins', sans-serif;
 	background-color: var(--bg);
 	color: var(--text);
+}
+
+h1, h2, h3, h4, h5, h6 {
+	margin: 0;
+}
+
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
+}
+
+input, button, textarea, select {
+  font: inherit;
+}
+
+input:is([type=text], [type=number], [type=date]), select, textarea {
+	padding: calc(var(--spacing-base) * 0.25) calc(var(--spacing-base) * 0.5);
+	background-color: var(--input);
+	color: var(--text);
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	width: 100%;
+}
+
+:is(input, select, textarea):focus {
+	outline: none;
+	border-color: var(--border-active);
+	box-shadow: 0 0 0 2px var(--input-shadow-focused);
 }
 
 .form-group {
 	display: flex;
 	flex-direction: column;
 	gap: calc(var(--spacing-base) * 0.5);
+}
+
+.button {
+	--padding-y: 0.5;
+	--padding-x: 1;
+	--icon-size: 0.875rem;
+	--bg-color: var(--primary);
+	--bg-hover: var(--primary-hover);
+	--text-color: var(--primary-foreground);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: calc(var(--spacing-base) * var(--padding-y)) calc(var(--spacing-base) * var(--padding-x));
+	background-color: var(--bg-color);
+	color: var(--text-color);
+	border-radius: 4px;
+	border: none;
+	gap: calc(var(--spacing-base) * 0.25);
+	cursor: pointer;
+	font-size: 0.875rem;
+	transition: background-color 0.15s ease-out, color 0.15s ease-out;
+}
+
+.button:hover {
+	background-color: var(--bg-hover);
+}
+
+.button-secondary {
+	--bg-color: var(--secondary);
+	--bg-hover: var(--secondary-hover);
+	--text-color: var(--secondary-foreground);
+}
+
+.button-small {
+	--padding-y: 0.25;
+	--padding-x: 0.5;
+	--icon-size: 0.75rem;
+	font-size: 0.75rem;
+}
+
+.button.button-icon {
+	--padding-x: var(--padding-y);
+}
+
+.button > svg {
+	height: var(--icon-size);
+	width: var(--icon-size);
 }
 
 .flex {
@@ -57,6 +143,22 @@ body {
 
 .flex-wrap {
 	flex-wrap: wrap;
+}
+
+.justify-between {
+	justify-content: space-between;
+}
+
+.justify-end {
+	justify-content: flex-end;
+}
+
+.h-4 {
+	height: 1rem;
+}
+
+.w-4 {
+	width: 1rem;
 }
 
 .h-full {
@@ -87,6 +189,9 @@ body {
 	color: var(--text-active);
 }
 
+.gap-2 {
+	gap: calc(var(--spacing-base) * 0.5);
+}
 .gap-4 {
 	gap: var(--spacing-base);
 }
@@ -129,6 +234,7 @@ body {
 .tab {
 	position: relative;
 	cursor: pointer;
+	display: flex;;
 }
 
 .tab > input {
@@ -148,10 +254,60 @@ body {
 	color: var(--text);
 	transition: all 0.15s ease-out;
 	font-size: 0.875rem;
+	display: flex;
+	align-items: center;
+	gap: calc(var(--spacing-base) * 0.25);
 }
 .tab > input:checked + div {
 	border-bottom-color: var(--border-active);
 	background-color: var(--bg-active);
+}
+
+dialog {
+	border-radius: 10px;
+	border: 1px solid var(--border);
+	width: clamp(300px, 80vw, 600px);
+	transform: translate(0px, 0px);
+	opacity: 1;
+	transition: display 0.15s ease-out allow-discrete, transform 0.15s ease-in-out, opacity 0.15s ease-out;
+	z-index: 1000;
+}
+
+dialog::backdrop {
+	transition: display 0.15s ease-out allow-discrete, background-color 0.15s ease-in-out, backdrop-filter 0.15s ease-out;
+	background-color: rgba(0, 0, 0, 0.5);
+	backdrop-filter: blur(5px);
+}
+
+@starting-style {
+	dialog {
+		transform: translate(0px, -20px);
+		opacity: 0;
+	}
+	dialog::backdrop {
+		background-color: rgba(0, 0, 0, 0.0);
+		backdrop-filter: blur(0px);
+	}
+}
+
+dialog:not([open]) {
+	transform: translate(0px, -20px);
+	opacity: 0;
+}
+
+.dual-editor-layout {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	min-height: 100%;
+}
+
+@media screen and (max-width: 80rem) {
+	.dual-editor-layout {
+		grid-template-columns: 1fr;
+	}
+	.dual-editor-layout > div {
+		min-height: 80dvh;
+	}
 }
 
 monaco-editor,

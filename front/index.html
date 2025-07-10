@@ -13,62 +13,39 @@
 
 <body>
 	<div class="h-full flex flex-col gap-4 p-4">
-		<div class="flex flex-row flex-grow w-full overflow-hidden gap-4">
-			<div class="card flex-grow">
-				<div class="flex gap-4 flex-wrap">
-					<div class="form-group">
-						<label class="font-medium text-sm" for="file">JSON input</label>
-						<input type="file" id="file" accept=".json" />
-					</div>
-
-					<div class="form-group">
-						<label class="font-medium text-sm" for="max-iter">Max iterations</label>
-						<input type="number" min="0" step="1" id="max-iter" value="100" title="This influences the number of outputs. A value of 0 means infinite iterations. Increasing this value too high will impact performances or may hang your browser in case of an infinite loop." />
-					</div>
-
-					<div class="form-group">
-						<div class="form-group flex-col">
-							<label for="output-mode" class="font-medium text-sm">Output mode</label>
-							<select id="output-mode" class="ml-2">
-								<option value="json">JSON</option>
-								<option value="json-pretty" selected>JSON Prettyfied</option>
-								<option value="raw">Raw</option>
-							</select>
-						</div>
-
-						<label class="font-medium">
-							<input type="checkbox" id="diff" />
-							<span class="ml-2 text-sm">Show diff</span>
-						</label>
-					</div>
-				</div>
-			</div>
-			<div class="card">
-				<div class="form-group">
-					<div class="font-semibold">About</div>
-					<div class="text-sm"><span class="font-medium">gojq version:</span> <span id="gojq-version"></span></div>
-					<a target="_blank" href="./LICENSES.txt">Licenses</a>
-				</div>
-			</div>
-		</div>
-		<div class="flex flex-row flex-grow w-full overflow-hidden gap-4">
-			<div class="w-1/2 overflow-hidden card">
+		<div class="dual-editor-layout w-full gap-4">
+			<div class="overflow-hidden card">
 				<div class="flex flex-col h-full">
-					<form class="flex flex-row mb-1" id="input-select-form">
-						<label class="tab">
-							<input type="radio" name="input-select" value="query-editor" checked>
-							<div>GOJQ Query</div>
-						</label>
-						<label class="tab">
-							<input type="radio" name="input-select" value="input-editor">
-							<div>input.json</div>
-						</label>
-					</form>
+					<div class="flex flex-row justify-between">
+						<form class="flex flex-row mb-1" id="input-select-form">
+							<label class="tab">
+								<input type="radio" name="input-select" value="query-editor" checked>
+								<div>GOJQ Query</div>
+							</label>
+							<label class="tab">
+								<input type="radio" name="input-select" value="input-editor">
+								<div>
+									input.json
+									<button id="load-from-disk-button" class="button button-secondary button-small button-icon" title="Load file from disk"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-hard-drive-upload-icon lucide-hard-drive-upload h-4 w-4"><path d="m16 6-4-4-4 4"/><path d="M12 2v8"/><rect width="20" height="8" x="2" y="14" rx="2"/><path d="M6 18h.01"/><path d="M10 18h.01"/></svg></button>
+								</div>
+							</label>
+						</form>
+						<div>
+							<div class="flex flex-row gap-2">
+								<button class="button button-secondary button-icon" id="open-settings-button" title="Settings">
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings-icon lucide-settings w-4 h-4"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+								</button>
+								<button class="button button-secondary button-icon" id="open-about-button" title="About">
+									<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-question-mark-icon lucide-circle-question-mark w-4 h-4"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+								</button>
+							</div>
+						</div>
+					</div>
 					<monaco-editor id="query-editor" class="query-editor" data-language="jq" data-theme="vs-dark"></monaco-editor>
 					<monaco-editor id="input-editor" class="query-editor hidden" data-language="json" data-theme="vs-dark"></monaco-editor>
 				</div>
 			</div>
-			<div class="w-1/2 overflow-hidden card">
+			<div class="overflow-hidden card">
 				<div class="form-group h-full">
 					<div class="font-medium text-sm block">Result</div>
 					<div class="result"></div>
@@ -76,6 +53,57 @@
 			</div>
 		</div>
 	</div>
+	<dialog id="settings-dialog">
+		<form id="settings-form" class="flex flex-col gap-4">
+			<div>
+				<h2 class="text-lg font-semibold">Settings</h2>
+			</div>
+	
+			<div class="flex flex-col gap-4">
+				<div class="form-group">
+					<label class="font-medium text-sm" for="max-iter">Max iterations</label>
+					<input type="number" min="0" step="1" id="max-iter" value="100" title="This influences the number of outputs. A value of 0 means infinite iterations. Increasing this value too high will impact performances or may hang your browser in case of an infinite loop." />
+				</div>
+
+				<div class="form-group flex-col">
+					<label for="output-mode" class="font-medium text-sm">Output mode</label>
+					<select id="output-mode" class="ml-2">
+						<option value="json">JSON</option>
+						<option value="json-pretty" selected>JSON Prettyfied</option>
+						<option value="raw">Raw</option>
+					</select>
+				</div>
+
+				<label class="font-medium">
+					<input type="checkbox" id="diff" />
+					<span class="ml-2 text-sm">Show diff</span>
+				</label>
+			</div>
+
+			<div class="flex flex-end gap-2 justify-end">
+				<button class="button button-secondary" data-close>Close</button>
+				<button class="button" type="submit">Validate</button>
+			</div>
+		</form>
+	</dialog>
+	<dialog id="about-dialog">
+		<div class="flex flex-col gap-4">
+			<div>
+				<h2 class="text-lg font-semibold">About</h2>
+			</div>
+
+			<div class="flex flex-col gap-4">
+				<div class="form-group">
+					<div class="text-sm"><span class="font-medium">gojq version:</span> <span id="gojq-version"></span></div>
+					<a target="_blank" href="./LICENSES.txt">Licenses</a>
+				</div>
+			</div>
+
+			<div class="flex flex-end gap-2 justify-end">
+				<button class="button button-secondary" data-close>Close</button>
+			</div>
+		</div>
+	</dialog>
 	<script>
 		require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs' } });
 
@@ -278,18 +306,44 @@
 			location.hash = `#?${params.toString()}`
 		}
 
+		document.addEventListener('click', (e) => {
+			if (e.target.matches('[data-close]')) {
+				const dialog = e.target.closest('dialog')
+				if (dialog) {
+					dialog.close("")
+				}
+			}
+		})
+
 		function run(initialInfo) {
 			document.getElementById('gojq-version').textContent = gojq.gojqVersion
+			let showDiff = false
 			let prepared = null
-			const fileInput = document.getElementById('file')
 			const maxIterInput = /** @type {HTMLInputElement} */(document.getElementById('max-iter'))
 			const outputModeSelect = /** @type {HTMLSelectElement} */(document.getElementById('output-mode'))
 			const diff = /** @type {HTMLInputElement} */(document.getElementById('diff'))
 			const inputSelectForm = /** @type {HTMLFormElement} */(document.getElementById('input-select-form'))
+			const settingsDialog = /** @type {HTMLDialogElement} */(document.getElementById('settings-dialog'))
+			const aboutDialog = /** @type {HTMLDialogElement} */(document.getElementById('about-dialog'))
+			const loadFromDiskBtn = document.getElementById('load-from-disk-button')
+
+			const settingsForm = /** @type {HTMLFormElement} */(document.getElementById('settings-form'))
+
 			let lastEditor = null
 
-			maxIterInput.value = initialInfo.maxIterations
-			outputModeSelect.value = initialInfo.outputMode
+			function openSettingsDialog() {
+				maxIterInput.value = initialInfo.maxIterations
+				outputModeSelect.value = initialInfo.outputMode
+				diff.checked = showDiff
+				settingsDialog.showModal()
+			}
+
+			function openAboutDialog() {
+				aboutDialog.showModal()
+			}
+
+			document.querySelector('#open-settings-button').addEventListener('click', openSettingsDialog)
+			document.querySelector('#open-about-button').addEventListener('click', openAboutDialog)
 
 			inputSelectForm.addEventListener('change', (e) => {
 				const formData = new FormData(inputSelectForm)
@@ -329,8 +383,8 @@
 					run: function() {
 						updateUrl({
 							query: queryEditor.getValue(),
-							maxIterations: maxIterInput.value?.length > 0 ? parseInt(maxIterInput.value, 10) : undefined,
-							outputMode: outputModeSelect.value
+							maxIterations: !isNaN(initialInfo.maxIterations) ? initialInfo.maxIterations : undefined,
+							outputMode: initialInfo.outputMode,
 						})
 					}
 				})
@@ -345,30 +399,62 @@
 					throttledLoadInput()
 				})
 
-				outputModeSelect.addEventListener('change', () => {
-					updateOriginal()
-					runQuery()
+				settingsForm.addEventListener('submit', (e) => {
+					e.preventDefault()
+
+					settingsDialog.close(JSON.stringify({
+						showDiff: diff.checked,
+						maxIterations: maxIterInput.value,
+						outputMode: outputModeSelect.value
+					}))
 				})
 
-				diff.addEventListener('change', () => {
+				settingsDialog.addEventListener('close', (e) => {
+					const result = e.target.returnValue
+					if (!result) {
+						return
+					}
+
+					const settings = JSON.parse(result)
+					if (settings.showDiff != null) {
+						showDiff = settings.showDiff
+					}
+					if (settings.maxIterations != null) {
+						let maxIter = parseInt(settings.maxIterations, 10)
+						if (isNaN(maxIter)) {
+							maxIter = 100
+						}
+						initialInfo.maxIterations = maxIter
+					}
+					if (settings.outputMode != null) {
+						initialInfo.outputMode = settings.outputMode
+					}
+
 					initResultEditor()
 					updateOriginal()
 					runQuery()
 				})
 
-				maxIterInput.addEventListener('change', () => {
-					updateOriginal()
-					runQuery()
-				})
-
-				fileInput.addEventListener('change', (e) => {
-					const file = e.target.files[0]
-					const reader = new FileReader()
-					reader.onload = (e) => {
-						const text = e.target.result
-						inputEditor.setValue(text)
+				loadFromDiskBtn.addEventListener('click', (e) => {
+					e.preventDefault()
+					e.stopPropagation()
+					const fileInput = document.createElement('input')
+					fileInput.type = 'file'
+					fileInput.accept = '.json'
+					fileInput.onchange = (e) => {
+						const file = e.target.files[0]
+						if (!file) {
+							return
+						}
+						const reader = new FileReader()
+						reader.onload = (e) => {
+							const text = e.target.result
+							inputEditor.setValue(text)
+							loadInput()
+						}
+						reader.readAsText(file)
 					}
-					reader.readAsText(file)
+					fileInput.click()
 				})
 
 				let loadInputTimeout = null
@@ -413,7 +499,7 @@
 
 			function initResultEditor() {
 				const previousEditor = document.querySelector('.result')
-				if (diff.checked) {
+				if (showDiff) {
 					const editor = /** @type {MonacoDiffEditorElement} */(document.createElement('monaco-diff-editor'))
 					editor.className = previousEditor.className
 					editor.setAttribute('data-theme', 'vs-dark')
