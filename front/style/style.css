@@ -74,7 +74,7 @@ input:is([type=text], [type=number], [type=date]), select, textarea {
 	gap: calc(var(--spacing-base) * 0.5);
 }
 
-.button {
+.btn {
 	--padding-y: 0.5;
 	--padding-x: 1;
 	--icon-size: 0.875rem;
@@ -95,28 +95,28 @@ input:is([type=text], [type=number], [type=date]), select, textarea {
 	transition: background-color 0.15s ease-out, color 0.15s ease-out;
 }
 
-.button:hover {
+.btn:hover {
 	background-color: var(--bg-hover);
 }
 
-.button-secondary {
+.btn-secondary {
 	--bg-color: var(--secondary);
 	--bg-hover: var(--secondary-hover);
 	--text-color: var(--secondary-foreground);
 }
 
-.button-small {
+.btn-small {
 	--padding-y: 0.25;
 	--padding-x: 0.5;
 	--icon-size: 0.75rem;
 	font-size: 0.75rem;
 }
 
-.button.button-icon {
+.btn.btn-icon {
 	--padding-x: var(--padding-y);
 }
 
-.button > svg {
+.btn > svg {
 	height: var(--icon-size);
 	width: var(--icon-size);
 }
