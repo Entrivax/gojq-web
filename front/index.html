@@ -455,7 +455,7 @@
 					this.#resultOutput.textContent = 'Please provide both a query and input.'
 					return
 				}
-				const result = gojq.exec(query, input, 'json-pretty', 0)
+				const result = gojq.exec(query, input, 'json-pretty', 0, 5000)
 				this.#resultOutput.textContent = result
 			}
 		}

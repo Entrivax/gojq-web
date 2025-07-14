@@ -482,7 +482,7 @@ dialog:not([open]) {
 	opacity: 0;
 }
 
-close-modal-button {
+close-modal-button.btn {
 	position: absolute;
 	top: calc(var(--spacing-base) * 1.25);
 	right: calc(var(--spacing-base) * 1.25);
