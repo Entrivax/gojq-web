@@ -73,7 +73,8 @@ func execJq(queryStr string, data any, outputMode OutputMode, maxIter int) strin
 			break
 		}
 		if err, ok := v.(error); ok {
-			return err.Error()
+			out += err.Error() + "\n"
+			break
 		}
 		serialized := []byte{}
 		switch outputMode {
@@ -108,7 +109,7 @@ func gojqWrapper() js.Value {
 		if len(args) < 4 {
 			return "Invalid arguments"
 		}
-		var data map[string]any
+		var data any
 		json.Unmarshal(
 			[]byte(args[1].String()),
 			&data,

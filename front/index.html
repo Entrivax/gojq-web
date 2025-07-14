@@ -35,8 +35,11 @@
 								<button class="btn btn-secondary btn-icon" id="open-settings-button" title="Settings">
 									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings-icon lucide-settings w-4 h-4"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
 								</button>
+								<button class="btn btn-secondary btn-icon" id="open-cheetsheat-button" title="Cheatsheet">
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open-icon lucide-book-open w-4 h-4"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+								</button>
 								<button class="btn btn-secondary btn-icon" id="open-about-button" title="About">
-									<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-question-mark-icon lucide-circle-question-mark w-4 h-4"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-question-mark-icon lucide-circle-question-mark w-4 h-4"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
 								</button>
 							</div>
 						</div>
@@ -91,7 +94,8 @@
 			</div>
 		</form>
 	</dialog>
-	<dialog id="about-dialog">
+	<dialog id="about-dialog" closedby="any">
+		<close-modal-button></close-modal-button>
 		<div class="flex flex-col gap-4">
 			<div>
 				<h2 class="text-lg font-semibold">About</h2>
@@ -103,14 +107,20 @@
 					<a target="_blank" href="./LICENSES.txt">Licenses</a>
 				</div>
 			</div>
-
-			<div class="flex flex-end gap-2 justify-end">
-				<button class="btn btn-secondary" data-close type="button">Close</button>
+		</div>
+	</dialog>
+	<dialog id="cheatsheet-dialog" closedby="any">
+		<close-modal-button></close-modal-button>
+		<div class="flex flex-col gap-4">
+			<div>
+				<h1 class="text-lg font-semibold">Cheatsheet</h1>
 			</div>
+
+			<div class="documentation"></div>
 		</div>
 	</dialog>
 	<script>
-		require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs' } });
+		require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs', 'marked': 'https://cdn.jsdelivr.net/npm/marked@16.0.0/lib/marked.umd.min' } });
 
 		(function() {
 			const initialInfo = {
@@ -149,6 +159,34 @@
 				run(initialInfo)
 			})
 		})()
+
+		class CloseModalButtonElement extends HTMLElement {
+			constructor() {
+				super()
+				this.classList.add('btn', 'btn-secondary', 'btn-icon')
+				this.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`
+				this.addEventListener('click', (e) => {
+					e.preventDefault()
+					this.#closeDialog()
+				})
+				this.addEventListener('keydown', (e) => {
+					if (e.key === 'Enter' || e.key === ' ') {
+						e.preventDefault()
+						this.#closeDialog()
+					}
+				})
+				this.tabIndex = 0
+				this.setAttribute('role', 'button')
+				this.setAttribute('aria-label', 'Close dialog')
+			}
+
+			#closeDialog() {
+				const dialog = this.closest('dialog')
+				if (dialog) {
+					dialog.close("")
+				}
+			}
+		}
 
 		class MonacoEditorElement extends HTMLElement {
 			#editor
@@ -194,7 +232,7 @@
 
 			getValue() {
 				if (this.#model) {
-					return this.#model.getValue()
+					return this.#model.getValue(monaco.editor.EndOfLinePreference.LF, false)
 				}
 				return this.#tmpValue
 			}
@@ -216,7 +254,7 @@
 			}
 
 			#disposeEditor() {
-				this.#tmpValue = this.#model?.getValue()
+				this.#tmpValue = this.#model?.getValue(monaco.editor.EndOfLinePreference.LF, false)
 				this.#editor?.dispose()
 				this.#model = null
 				this.#editor = null
@@ -305,6 +343,95 @@
 			}
 		}
 
+		class RunnableExampleElement extends HTMLElement {
+			#queryInput
+			#jsonInput
+			#resultOutput
+			#runButton
+			#wasRun = false
+			#abortController
+			constructor() {
+				super()
+
+				this.innerHTML = /* html */`
+					<div class="runnable-example-grid">
+						<label class="query-label" data-querylabel>Query</label>
+						<textarea class="query-input" rows="1" data-query autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+						<label class="json-label" data-jsonlabel>JSON</label>
+						<textarea class="json-input" rows="1" data-json autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+						<div class="result-label">Result</div>
+						<div class="overflow-auto result-output"><div class="whitespace-pre" data-result></div></div>
+						<div class="flex flex-row buttons">
+							<button class="btn btn-small" data-run>
+								<span>Run <kbd class="text-xs">(Shift+Enter)</kbd></span>
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-play-icon lucide-play"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+							</button>
+						</div>
+					</div>
+				`
+				this.#queryInput = /** @type {HTMLTextAreaElement} */(this.querySelector('[data-query]'))
+				this.#jsonInput = /** @type {HTMLTextAreaElement} */(this.querySelector('[data-json]'))
+				this.#resultOutput = /** @type {HTMLDivElement} */(this.querySelector('[data-result]'))
+				this.#runButton = /** @type {HTMLButtonElement} */(this.querySelector('[data-run]'))
+
+				this.addEventListener('keydown', this.#onKeyDown.bind(this))
+
+				this.#runButton.addEventListener('click', () => {
+					this.#runQuery()
+				})
+			}
+
+			connectedCallback() {
+				const query = this.getAttribute('data-query') || '.'
+				this.#queryInput.value = query
+				this.#queryInput.rows = Math.max(1, query.split('\n').length + 1)
+				const json = this.getAttribute('data-json') || '.'
+				this.#jsonInput.value = json
+				this.#jsonInput.rows = Math.max(1, json.split('\n').length + 1)
+
+				if (!this.#wasRun && !this.#abortController) {
+					this.#abortController = new AbortController()
+					const inter = new IntersectionObserver((entries) => {
+						for (const entry of entries) {
+							if (entry.intersectionRatio > 0) {
+								this.#wasRun = true
+								this.#abortController?.abort()
+								this.#abortController = null
+								this.#runQuery()
+							}
+						}
+					})
+					this.#abortController.signal.addEventListener('abort', () => {
+						inter.disconnect()
+					})
+					inter.observe(this)
+				}
+			}
+
+			disconnectedCallback() {
+				this.#abortController?.abort()
+				this.#abortController = null
+			}
+
+			#onKeyDown(e) {
+				if (e.key === 'Enter' && e.shiftKey) {
+					e.preventDefault()
+					this.#runQuery()
+				}
+			}
+
+			#runQuery() {
+				const query = this.#queryInput.value
+				const input = this.#jsonInput.value
+				if (!query || !input) {
+					this.#resultOutput.textContent = 'Please provide both a query and input.'
+					return
+				}
+				const result = gojq.exec(query, input, 'json-pretty', 0)
+				this.#resultOutput.textContent = result
+			}
+		}
+
 		function updateUrl(obj) {
 			const params = new URLSearchParams()
 			params.set('init', JSON.stringify(obj))
@@ -324,12 +451,16 @@
 			document.getElementById('gojq-version').textContent = gojq.gojqVersion
 			let showDiff = false
 			let prepared = null
+			let queryLoadTimeout = null
+			const queryLoadDelayMs = 200
 			const maxIterInput = /** @type {HTMLInputElement} */(document.getElementById('max-iter'))
 			const outputModeSelect = /** @type {HTMLSelectElement} */(document.getElementById('output-mode'))
 			const diff = /** @type {HTMLInputElement} */(document.getElementById('diff'))
 			const inputSelectForm = /** @type {HTMLFormElement} */(document.getElementById('input-select-form'))
 			const settingsDialog = /** @type {HTMLDialogElement} */(document.getElementById('settings-dialog'))
 			const aboutDialog = /** @type {HTMLDialogElement} */(document.getElementById('about-dialog'))
+			const cheatsheetDialog = /** @type {HTMLDialogElement} */(document.getElementById('cheatsheet-dialog'))
+			let cheatsheetDialogInitialized = false
 			const loadFromDiskBtn = document.getElementById('load-from-disk-button')
 
 			const settingsForm = /** @type {HTMLFormElement} */(document.getElementById('settings-form'))
@@ -347,7 +478,24 @@
 				aboutDialog.showModal()
 			}
 
+			function openCheatsheetDialog() {
+				cheatsheetDialog.showModal()
+				if (!cheatsheetDialogInitialized) {
+					cheatsheetDialogInitialized = true
+					Promise.all([
+						new Promise((resolve) => {
+							require(['marked'], resolve)
+						}),
+						fetch('./cheatsheet.md').then(res => res.text())
+					]).then(([{parse}, cheatsheetResponse]) => {
+						const cheatsheetContent = document.querySelector('.documentation')
+						cheatsheetContent.innerHTML = parse(cheatsheetResponse)
+					})
+				}
+			}
+
 			document.querySelector('#open-settings-button').addEventListener('click', openSettingsDialog)
+			document.querySelector('#open-cheetsheat-button').addEventListener('click', openCheatsheetDialog)
 			document.querySelector('#open-about-button').addEventListener('click', openAboutDialog)
 
 			inputSelectForm.addEventListener('change', (e) => {
@@ -391,6 +539,9 @@
 				})
 
 				queryEditor.setValue(initialInfo.query)
+				inputEditor.setValue('{}')
+
+				loadInput()
 
 				queryEditor.addEventListener('changecontent', () => {
 					runQuery()
@@ -527,19 +678,17 @@
 					runQuery()
 				}
 
-				let timeout = null
-				const delay = 200
 				function runQuery(query) {
-					if (timeout != null) {
-						window.clearTimeout(timeout)
-						timeout = null
+					if (queryLoadTimeout != null) {
+						window.clearTimeout(queryLoadTimeout)
+						queryLoadTimeout = null
 					}
-					timeout = window.setTimeout(() => {
+					queryLoadTimeout = window.setTimeout(() => {
 						if (!prepared) {
 							return
 						}
 						lastEditor.setModified?.(prepared(queryEditor.getValue(), initialInfo.outputMode, initialInfo.maxIterations))
-					}, delay)
+					}, queryLoadDelayMs)
 				}
 
 				initResultEditor()
@@ -585,6 +734,8 @@
 		function setupCustomElements() {
 			window.customElements.define('monaco-editor', MonacoEditorElement)
 			window.customElements.define('monaco-diff-editor', MonacoDiffEditor)
+			window.customElements.define('runnable-example', RunnableExampleElement)
+			window.customElements.define('close-modal-button', CloseModalButtonElement)
 		}
 
 		/**
