@@ -41,6 +41,16 @@
 								<button class="btn btn-secondary btn-icon" id="open-about-button" title="About">
 									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-question-mark-icon lucide-circle-question-mark w-4 h-4"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
 								</button>
+								<div class="btn-group">
+									<label class="btn btn-icon" title="Auto run query">
+										<input type="checkbox" id="auto-run-checkbox" checked>
+										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-cw-icon lucide-refresh-cw hidden-unchecked"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-cw-off-icon lucide-refresh-cw-off hidden-checked"><path d="M21 8L18.74 5.74A9.75 9.75 0 0 0 12 3C11 3 10.03 3.16 9.13 3.47"/><path d="M8 16H3v5"/><path d="M3 12C3 9.51 4 7.26 5.64 5.64"/><path d="m3 16 2.26 2.26A9.75 9.75 0 0 0 12 21c2.49 0 4.74-1 6.36-2.64"/><path d="M21 12c0 1-.16 1.97-.47 2.87"/><path d="M21 3v5h-5"/><path d="M22 22 2 2"/></svg>
+									</label>
+									<button class="btn btn-icon" id="open-run-button" title="Run query">
+										<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-play-icon lucide-play"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+									</button>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -70,7 +80,17 @@
 			<div class="flex flex-col gap-4">
 				<div class="form-group">
 					<label class="font-medium text-sm" for="max-iter">Max iterations</label>
-					<input type="number" min="0" step="1" id="max-iter" value="100" title="This influences the number of outputs. A value of 0 means infinite iterations. Increasing this value too high will impact performances or may hang your browser in case of an infinite loop." />
+					<input type="number" min="0" step="1" id="max-iter" title="This influences the number of outputs. A value of 0 means infinite iterations. Increasing this value too high will impact performances or may hang your browser in case of an infinite loop." />
+				</div>
+
+				<div class="form-group">
+					<label class="font-medium text-sm" for="auto-run-ms">Auto run timeout (ms):</label>
+					<input type="number" min="0" step="100" id="auto-run-ms" title="Will stop execution of the auto-runned query (when editing) if it exceeds this execution time. It will NOT stop the marshalling operation if it takes too long, be warned when outputting really big objects." />
+				</div>
+
+				<div class="form-group">
+					<label class="font-medium text-sm" for="manual-run-ms">Manual run timeout (ms):</label>
+					<input type="number" min="0" step="1000" id="manual-run-ms" title="Will stop execution of the manually runned query (when clicking the run button) if it exceeds this execution time. It will NOT stop the marshalling operation if it takes too long, be warned when outputting really big objects." />
 				</div>
 
 				<div class="form-group flex-col">
@@ -126,7 +146,9 @@
 			const initialInfo = {
 				maxIterations: 100,
 				query: '.',
-				outputMode: 'json-pretty'
+				outputMode: 'json-pretty',
+				autoRunTimeoutMs: 200,
+				manualRunTimeoutMs: 10000,
 			}
 			initInfo: try {
 				const params = new URLSearchParams(location.hash.slice(1))
@@ -140,6 +162,12 @@
 				}
 				if (typeof initData.maxIterations === 'number' && !isNaN(initData.maxIterations) && initData.maxIterations >= 0) {
 					initialInfo.maxIterations = initData.maxIterations
+				}
+				if (typeof initData.autoRunTimeoutMs === 'number' && !isNaN(initData.autoRunTimeoutMs) && initData.autoRunTimeoutMs >= 0) {
+					initialInfo.autoRunTimeoutMs = initData.autoRunTimeoutMs
+				}
+				if (typeof initData.manualRunTimeoutMs === 'number' && !isNaN(initData.manualRunTimeoutMs) && initData.manualRunTimeoutMs >= 0) {
+					initialInfo.manualRunTimeoutMs = initData.manualRunTimeoutMs
 				}
 				if (typeof initData.query === 'string') {
 					initialInfo.query = initData.query
@@ -453,7 +481,10 @@
 			let prepared = null
 			let queryLoadTimeout = null
 			const queryLoadDelayMs = 200
+			const autoRunCheckbox = /** @type {HTMLInputElement} */(document.getElementById('auto-run-checkbox'))
 			const maxIterInput = /** @type {HTMLInputElement} */(document.getElementById('max-iter'))
+			const autoRunMsInput = /** @type {HTMLSelectElement} */(document.getElementById('auto-run-ms'))
+			const manualRunMsInput = /** @type {HTMLSelectElement} */(document.getElementById('manual-run-ms'))
 			const outputModeSelect = /** @type {HTMLSelectElement} */(document.getElementById('output-mode'))
 			const diff = /** @type {HTMLInputElement} */(document.getElementById('diff'))
 			const inputSelectForm = /** @type {HTMLFormElement} */(document.getElementById('input-select-form'))
@@ -469,6 +500,8 @@
 
 			function openSettingsDialog() {
 				maxIterInput.value = initialInfo.maxIterations
+				autoRunMsInput.value = initialInfo.autoRunTimeoutMs
+				manualRunMsInput.value = initialInfo.manualRunTimeoutMs
 				outputModeSelect.value = initialInfo.outputMode
 				diff.checked = showDiff
 				settingsDialog.showModal()
@@ -515,7 +548,7 @@
 			require(['vs/editor/editor.main'], function () {
 				setupCustomElements()
 				let updateOriginal = () => {
-					lastEditor?.setOriginal?.(prepared?.('.', initialInfo.outputMode, initialInfo.maxIterations))
+					lastEditor?.setOriginal?.(prepared?.('.', initialInfo.outputMode, initialInfo.maxIterations, initialInfo.autoRunTimeoutMs))
 				}
 				monaco.languages.register({ id: 'jq' })
 				monaco.languages.setMonarchTokensProvider('jq', jqLanguageTokens());
@@ -544,12 +577,14 @@
 				loadInput()
 
 				queryEditor.addEventListener('changecontent', () => {
-					runQuery()
+					runThrottledQuery(initialInfo.autoRunTimeoutMs)
 				})
 
 				inputEditor.addEventListener('changecontent', () => {
 					throttledLoadInput()
 				})
+
+				document.querySelector('#open-run-button').addEventListener('click', manualRunQuery)
 
 				settingsForm.addEventListener('submit', (e) => {
 					e.preventDefault()
@@ -557,6 +592,8 @@
 					settingsDialog.close(JSON.stringify({
 						showDiff: diff.checked,
 						maxIterations: maxIterInput.value,
+						autoRunTimeoutMs: autoRunMsInput.value,
+						manualRunTimeoutMs: manualRunMsInput.value,
 						outputMode: outputModeSelect.value
 					}))
 				})
@@ -578,13 +615,27 @@
 						}
 						initialInfo.maxIterations = maxIter
 					}
+					if (settings.autoRunTimeoutMs != null) {
+						let autoRunTimeoutMs = parseInt(settings.autoRunTimeoutMs, 10)
+						if (isNaN(autoRunTimeoutMs)) {
+							autoRunTimeoutMs = 200
+						}
+						initialInfo.autoRunTimeoutMs = autoRunTimeoutMs
+					}
+					if (settings.manualRunTimeoutMs != null) {
+						let manualRunTimeoutMs = parseInt(settings.manualRunTimeoutMs, 10)
+						if (isNaN(manualRunTimeoutMs)) {
+							manualRunTimeoutMs = 10000
+						}
+						initialInfo.manualRunTimeoutMs = manualRunTimeoutMs
+					}
 					if (settings.outputMode != null) {
 						initialInfo.outputMode = settings.outputMode
 					}
 
 					initResultEditor()
 					updateOriginal()
-					runQuery()
+					runThrottledQuery(initialInfo.autoRunTimeoutMs)
 				})
 
 				loadFromDiskBtn.addEventListener('click', (e) => {
@@ -675,24 +726,35 @@
 					const input = inputEditor.getValue()
 					prepared = gojq.prepare(input)
 					updateOriginal()
-					runQuery()
+					runThrottledQuery(initialInfo.autoRunTimeoutMs)
 				}
 
-				function runQuery(query) {
+				function runThrottledQuery(timeoutMs) {
+					if (!autoRunCheckbox.checked) {
+						return
+					}
 					if (queryLoadTimeout != null) {
 						window.clearTimeout(queryLoadTimeout)
 						queryLoadTimeout = null
 					}
 					queryLoadTimeout = window.setTimeout(() => {
-						if (!prepared) {
-							return
-						}
-						lastEditor.setModified?.(prepared(queryEditor.getValue(), initialInfo.outputMode, initialInfo.maxIterations))
+						runQuery(timeoutMs)
 					}, queryLoadDelayMs)
 				}
 
+				function runQuery(timeoutMs) {
+					if (!prepared) {
+						return
+					}
+					lastEditor.setModified?.(prepared(queryEditor.getValue(), initialInfo.outputMode, initialInfo.maxIterations, timeoutMs))
+				}
+
+				function manualRunQuery() {
+					runQuery(initialInfo.manualRunTimeoutMs)
+				}
+
 				initResultEditor()
-				runQuery()
+				runThrottledQuery(initialInfo.autoRunTimeoutMs)
 			})
 
 			function initResultEditor() {

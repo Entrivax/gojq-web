@@ -23,6 +23,8 @@ body {
 
 	--primary: hsl(240, 1%, 90%);
 	--primary-hover: hsl(240, 1%, 81%);
+	--primary-on: hsl(240, 1%, 70%);
+	--primary-on-hover: hsl(240, 1%, 61%);
 	--primary-foreground: hsl(240, 2%, 9%);
 	--secondary: hsl(240, 2%, 10%);
 	--secondary-hover: hsl(240, 2%, 20%);
@@ -209,6 +211,7 @@ runnable-example {
 	--bg-color: var(--primary);
 	--bg-hover: var(--primary-hover);
 	--text-color: var(--primary-foreground);
+	position: relative;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -223,8 +226,30 @@ runnable-example {
 	transition: background-color 0.15s ease-out, color 0.15s ease-out;
 }
 
+.btn input[type="checkbox"] {
+	appearance: none;
+	position: absolute;
+	opacity: 0;
+	top: 0;
+	left: 0;
+	pointer-events: none;
+}
+
 .btn:hover {
 	background-color: var(--bg-hover);
+}
+
+.btn:has(:checked) {
+	--bg-color: var(--primary-on);
+	--bg-hover: var(--primary-on-hover);
+}
+
+.btn:has(:checked) .hidden-checked {
+	display: none;
+}
+
+.btn:not(:has(:checked)) .hidden-unchecked {
+	display: none;
 }
 
 .btn-secondary {
@@ -245,6 +270,21 @@ runnable-example {
 .btn > svg {
 	height: var(--icon-size);
 	width: var(--icon-size);
+}
+
+.btn-group {
+	display: flex;
+}
+
+.btn-group > .btn:not(:last-child) {
+	border-right-width: 0px;
+	border-top-right-radius: 0px;
+	border-bottom-right-radius: 0px;
+}
+
+.btn-group > .btn:not(:first-child) {
+	border-top-left-radius: 0px;
+	border-bottom-left-radius: 0px;
 }
 
 .flex {

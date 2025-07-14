@@ -3,10 +3,12 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"syscall/js"
+	"time"
 
 	"github.com/itchyny/gojq"
 	"github.com/mattn/go-runewidth"
@@ -52,7 +54,7 @@ func stringParseError(queryStr string, err *gojq.ParseError) string {
 	return fmt.Sprintf("%s%s\n%s%s", prefix, lineBuf, strings.Repeat(" ", col+len(prefix)-len(err.Token))+strings.Repeat("^", len(err.Token))+"--- ", err.Error())
 }
 
-func execJq(queryStr string, data any, outputMode OutputMode, maxIter int) string {
+func execJq(queryStr string, data any, outputMode OutputMode, maxIter int, maxRunTime int) string {
 	query, err := gojq.Parse(queryStr)
 	if err != nil {
 		if err, ok := err.(*gojq.ParseError); ok {
@@ -60,7 +62,13 @@ func execJq(queryStr string, data any, outputMode OutputMode, maxIter int) strin
 		}
 		return err.Error()
 	}
-	iter := query.Run(data)
+	ctx := context.Background()
+	if maxRunTime > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(maxRunTime)*time.Millisecond)
+		defer cancel()
+	}
+	iter := query.RunWithContext(ctx, data)
 	curIter := -1
 	out := ""
 	for {
@@ -106,7 +114,7 @@ func gojqWrapper() js.Value {
 
 	wrapper := make(map[string]interface{})
 	wrapper["exec"] = js.FuncOf(func(this js.Value, args []js.Value) any {
-		if len(args) < 4 {
+		if len(args) < 5 {
 			return "Invalid arguments"
 		}
 		var data any
@@ -114,7 +122,7 @@ func gojqWrapper() js.Value {
 			[]byte(args[1].String()),
 			&data,
 		)
-		return execJq(args[0].String(), data, NewOutputMode(args[2].String()), args[3].Int())
+		return execJq(args[0].String(), data, NewOutputMode(args[2].String()), args[3].Int(), args[4].Int())
 	})
 
 	wrapper["prepare"] = js.FuncOf(func(this js.Value, args []js.Value) any {
@@ -127,10 +135,10 @@ func gojqWrapper() js.Value {
 			&data,
 		)
 		return js.FuncOf(func(this js.Value, args []js.Value) any {
-			if len(args) < 3 {
+			if len(args) < 4 {
 				return "Invalid arguments"
 			}
-			return execJq(args[0].String(), data, NewOutputMode(args[1].String()), args[2].Int())
+			return execJq(args[0].String(), data, NewOutputMode(args[1].String()), args[2].Int(), args[3].Int())
 		})
 	})
 

@@ -114,7 +114,7 @@
 				}
 
 				const prepared = gojq.prepare(jsonData)
-				const transformed = prepared(initialInfo.query, initialInfo.outputMode, initialInfo.maxIterations)
+				const transformed = prepared(initialInfo.query, initialInfo.outputMode, initialInfo.maxIterations, 0)
 				let blobType = 'application/json;charset=utf-8'
 				let ext = '.json'
 				if (initialInfo.outputMode === 'raw') {
