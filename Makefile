@@ -7,10 +7,5 @@ build-gojq:
 	cd tmp/licenses; rm -f "../../front/LICENSES" ; echo -n "" > ../LICENSE ; find . -type f -exec sh -c 'echo $$0 | sed "s/^\.\///g" >> ../LICENSE ; cat $$0 >> ../LICENSE ; echo "" >> ../LICENSE' {} \; ;\
 	cd ../../additional-licenses;                                             find . -type f -exec sh -c 'echo $$0 | sed "s/^\.\///g" >> ../tmp/LICENSE ; cat $$0 >> ../tmp/LICENSE ; echo "" >> ../tmp/LICENSE' {} \; ; mv ../tmp/LICENSE ../front/LICENSES.txt
 
-build: build-gojq
-	mkdir -p file-server/res
-	cp -r front/* file-server/res/
-	cd file-server; go build -o ../bin/file-server ./main.go
-
 docker:
 	docker build -t ghcr.io/entrivax/gojq-web .
