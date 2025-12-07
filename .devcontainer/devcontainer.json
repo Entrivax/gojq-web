@@ -12,7 +12,15 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "go install github.com/google/go-licenses@latest"
+	"postCreateCommand": "go install github.com/google/go-licenses@latest",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"EditorConfig.EditorConfig",
+				"golang.go"
+			]
+		}
+	}
 
 	// Configure tool-specific properties.
 	// "customizations": {},
