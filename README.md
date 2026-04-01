@@ -14,29 +14,17 @@ Its main goal is to test your queries before using them with [gojq](https://gith
 ## How to build
 
 ### Requirements
-- Go 1.23
+- Go 1.26
 - Make
 - go-licenses `go install github.com/google/go-licenses@latest`
+- Docker or a static web server
 
-or
-
-- Docker
-
-### Build natively
+### Build for a static web server
 Run
 ```sh
-make build
+make build-gojq
 ```
-Now you can either:
-- serve the `front` directory with a web server,
-- or you can run the standalone server at `bin/file-server` by running
-  ```sh
-  bin/file-server
-  ```
-  and you can change the port with the environment variable `PORT`
-  ```sh
-  PORT=7777 bin/file-server
-  ```
+Then you can copy the `front` folder to your static web server to serve it.
 
 ### Build with Docker
 Run
@@ -45,5 +33,5 @@ make docker
 ```
 Now you can run the image with
 ```sh
-docker run -p 8080:8080 -d ghcr.io/entrivax/gojq-web
+docker run -p 8080:80 -d ghcr.io/entrivax/gojq-web
 ```

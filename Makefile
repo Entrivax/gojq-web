@@ -1,4 +1,4 @@
-.PHONY: build build-gojq
+.PHONY: docker build-gojq
 
 build-gojq: GOJQVERSION=$(shell cd gojq-lib; go list -m -f '{{ .Version }}' github.com/itchyny/gojq)
 build-gojq:

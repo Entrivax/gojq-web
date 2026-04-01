@@ -1,4 +1,4 @@
-FROM golang:1.24 AS build
+FROM golang:1.26 AS build
 RUN go install github.com/google/go-licenses@latest
 WORKDIR /app
 COPY . .
